@@ -1,0 +1,10 @@
+function FEM()
+    addpath('./DistMesh') %Je kunt nu ook scriptjes vinden in die grote folder voor meshes
+    z_max = pi/2;
+    r_max = 2;
+    h_density = 0.15
+    pfix=[0,0;0,boundary(0);z_max,0;z_max,boundary(z_max)]
+    [V,F]=distmesh2d(inline('dfct(rz_coord,boundary)','rz_coord'),@huniform,h_density,[0,0;z_max,r_max],pfix);
+    V;
+    F;
+end
