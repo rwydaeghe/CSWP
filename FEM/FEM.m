@@ -1,18 +1,10 @@
 function FEM()
-    %Nz=17;
-    %Nr=17;
-    %[Vertices, Faces] = meshRectangle([0,0],[1,1], Nz, Nr);
-    %viewMesh(Vertices, Faces);
-
     addpath('./DistMesh') %Je kunt nu ook scriptjes vinden in die grote folder voor meshes
-    fd=@(p) fct(p);
-    [p,t]=distmesh2d(fd,@huniform,0.2,[-2,-1;2,1],[]);
-end
-function out = fct(p)
-    out = p(:,1).^2/2^2+p(:,2).^2/1^2-1;
-    %if p(:,1) > 0
-    %    out = p(:,1).^2/2^2+p(:,2).^2/1^2-1;
-    %else
-    %    out = 0;
-    %end
+    z_max = pi;
+    r_max = 2;
+    h_density = 0.15
+    pfix=[0,0;z_max,cos(z_max)]
+    [V,F]=distmesh2d(inline('dfct(rz,@(rz) sin(rz(:,1)))','rz'),@huniform,h_density,[0,0;z_max,r_max],[]);
+    V;
+    F;
 end
