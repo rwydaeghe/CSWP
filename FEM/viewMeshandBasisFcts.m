@@ -8,7 +8,7 @@ function viewMeshandBasisFcts(V,F,w_nodes,w_edges,triangle,point,resolution)
         for j = 1:length(R)
             wzr = w_edges{triangle,point}(Z(i),R(j)); %gedoe moet want anders verwart matlab indexing met functie-argumenten
             wz(i,j) = wzr(1);
-            wr(i,j) = wzr(2);            
+            wr(i,j) = wzr(2);           
         end
     end
     

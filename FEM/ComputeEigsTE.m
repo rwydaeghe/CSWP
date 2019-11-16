@@ -48,5 +48,5 @@ function ComputeEigsTE()
         %To see total w_edges in a triangle, and edit arguments in viewMesh
         %w_edges_total{n}=@(z,r) w_edges{n,1}(z,r)+w_edges{n,2}(z,r)+w_edges{n,3}(z,r);
     end
-    viewMeshandBasisFcts(V, F, w_nodes, w_edges, 2, 1, 1/(6*(Nz+Nr)/2))
+    viewMeshandBasisFcts(V, F, w_nodes, w_edges, 1, 1, 1/(6*(Nz+Nr)/2))
 end 
