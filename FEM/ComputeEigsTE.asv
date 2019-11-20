@@ -1,20 +1,18 @@
 function ComputeEigsTE()
     clf
+    close all
     addpath('./DistMesh') %Je kunt nu ook scriptjes vinden in die grote folder voor meshes
     %create basic rect mesh
     %%{
-    z_max = 1;
-    r_max = 1;
-    Nz=3;
-    Nr=3;
+    z_max = 1; r_max = 1;
+    Nz=3; Nr=Nz;
     [V, F] = meshRectangle([0,0],[z_max,r_max], Nz, Nr);
     V = V(:,1:2); %vertices blijkbaar 3D punten...
     %%}
     
     %fancy general boundary mesh
     %{
-    z_max = pi;
-    r_max = 1;
+    z_max = pi; r_max = 1;
     vertices_length = 0.15;
     coord_fix=[0,0;0,boundary(0);z_max,0;z_max,boundary(z_max)];
     [V,F]=distmesh2d(inline('dfct(rz,@(rz) boundary(rz(:,1)))','rz'),@huniform,vertices_length,[0,0;z_max,r_max],coord_fix);
@@ -22,7 +20,7 @@ function ComputeEigsTE()
     
     % THE SLOW WAY
     %{ 
-    %tic
+    tic
     %pre-allocate to increase performance
     w_nodes = cell(length(F),3); %matlab can't have function handles in array so use cells
     w_edges_z = cell(length(F),3); 
@@ -31,6 +29,7 @@ function ComputeEigsTE()
     w_edges_r_total = cell(length(F),1);
     for n = 1:length(F)
         %make triangles positively oriented (in practice, the mesh algorithm already does this)
+        %{
         %if the 3rd point is to the left of the vector point 1-->2, flip the 3rd point with the 2nd
         isLeft = sign((V(F(n,3),1) - V(F(n,1),1)) * (V(F(n,2),2) - V(F(n,1),2)) - (V(F(n,3),2) - V(F(n,1),2)) * (V(F(n,2),1) - V(F(n,1),1)));
         if isLeft > 0
@@ -39,6 +38,7 @@ function ComputeEigsTE()
         elseif isLeft == 0
             disp('error with changing triangle node indices')
         end
+        %}
         z = [V(F(n,1),1); V(F(n,2),1); V(F(n,3),1)];
         r = [V(F(n,1),2); V(F(n,2),2); V(F(n,3),2)];
         %pre-allocate to increase performance
@@ -61,59 +61,87 @@ function ComputeEigsTE()
         w_edges_z_total{n,1}=@(z,r) w_edges_z{n,1}(z,r)+w_edges_z{n,2}(z,r)+w_edges_z{n,3}(z,r);
         w_edges_r_total{n,1}=@(z,r) w_edges_r{n,1}(z,r)+w_edges_r{n,2}(z,r)+w_edges_r{n,3}(z,r);
     end
-    %toc
+    toc
     %}
     
     % THE FAST WAY 
     %%{
-    %tic
+    tic
     F=F.';
     V=V.';
     z=[V(1,F(1,:));V(1,F(2,:));V(1,F(3,:))];
     r=[V(2,F(1,:));V(2,F(2,:));V(2,F(3,:))];
     %pre-allocate to increase performance
     a = zeros(3,length(F)); b = zeros(3,length(F)); c = zeros(3,length(F)); A=zeros(1,length(F));
-    w_nodes = cell(length(F),3); %matlab can't have function handles in array so use cells
+    w_nodes = cell(length(F),3); %matlab can't have function handles in arrays so use cells
     w_edges_z = cell(length(F),3); w_edges_r = cell(3,length(F)); 
     w_edges_z_total = cell(length(F),1); w_edges_r_total = cell(length(F),1);
-
-    a([1,2,3],:)=z(mod([1,2,3],3)+1,:).*r(mod([1,2,3]+1,3)+1,:)-z(mod([1,2,3]+1,3)+1,:).*r(mod([1,2,3],3)+1,:);
-    b([1,2,3],:)=r(mod([1,2,3],3)+1,:)-r(mod([1,2,3]-2,3)+1,:);
-    c([1,2,3],:)=z(mod([1,2,3]-2,3)+1,:)-z(mod([1,2,3],3)+1,:);
-    A(1,:)=(b(2,:).*c(3,:)-b(3,:).*c(2,:))/2; %idem for all i
+    i=[1,2,3]; s=@(i) mod(i-1,3)+1;
     
-    for i = 0:2
+    a(i,:)=z(s(i+1),:).*r(s(i+2),:)-z(s(i+2),:).*r(s(i+1),:);
+    b(i,:)=r(s(i+1),:)-r(s(i-1),:);
+    c(i,:)=z(s(i-1),:)-z(s(i+1),:);
+    A(i,:)=(b(s(i+1),:).*c(s(i+2),:)-b(s(i+2),:).*c(s(i+1),:))/2; %idem for all i
+    
+    for i = 1:3
         for n=1:length(F)
-            w_nodes{n,i+1}=@(z,r) (a(i+1,n)+b(i+1,n)*z+c(i+1,n)*r)./(2*A(1,n));
-            w_edges_z{n,i+1}=@(z,r) (a(mod(i+1,3)+1,n).*b(mod(i+2,3)+1,n)-a(mod(i+2,3)+1,n).*b(mod(i+1,3)+1,n)+(c(mod(i+1,3)+1,n).*b(mod(i+2,3)+1,n)-c(mod(i+2,3)+1,n).*b(mod(i+1,3)+1,n))*r)./(4*A(1,n).^2);
-            w_edges_r{n,i+1}=@(z,r) (a(mod(i+1,3)+1,n).*c(mod(i+2,3)+1,n)-a(mod(i+2,3)+1,n).*c(mod(i+1,3)+1,n)+(b(mod(i+1,3)+1,n).*c(mod(i+2,3)+1,n)-b(mod(i+2,3)+1,n).*c(mod(i+1,3)+1,n))*z)./(4*A(1,n).^2);
+            w_nodes{n,i}=@(z,r) (a(s(i),n)+b(s(i),n)*z+c(s(i),n)*r)./(2*A(i,n));
+            w_edges_z{n,i}=@(z,r) (a(s(i+1),n).*b(s(i+2),n)-a(s(i+2),n).*b(s(i+1),n)+(c(s(i+1),n).*b(s(i+2),n)-c(s(i+2),n).*b(s(i+1),n))*r)./(4*A(i,n).^2);
+            w_edges_r{n,i}=@(z,r) (a(s(i+1),n).*c(s(i+2),n)-a(s(i+2),n).*c(s(i+1),n)+(b(s(i+1),n).*c(s(i+2),n)-b(s(i+2),n).*c(s(i+1),n))*z)./(4*A(i,n).^2);
         end
     end
+
+    i=[1,2,3];
     w_edges_z_total{n,1}=@(z,r) w_edges_z{n,1}(z,r)+w_edges_z{n,2}(z,r)+w_edges_z{n,3}(z,r);
     w_edges_r_total{n,1}=@(z,r) w_edges_r{n,1}(z,r)+w_edges_r{n,2}(z,r)+w_edges_r{n,3}(z,r);
-    %toc
+    toc
     %%}
     
-    Ig=F([1,2,3,1,2,3,1,2,3],:);
-    Jg=F([1,1,1,2,2,2,3,3,3],:);
-    Kg=zeros(9,length(F));
-    Kg(1,:)=10000;
-    Kg(2,:)=100;
-    Kg(3,:)=1;
-    Kg(5,:)=10000;
-    Kg(6,:)=100;
-    Kg(9,:)=10000;
-    Kg([4,7,8],:)=Kg([2,3,6],:);
-    M=full(sparse(Ig,Jg,Kg,length(V),length(V)))
+    I=F([1,2,3,1,2,3,1,2,3],:); J=F([1,1,1,2,2,2,3,3,3],:);
+    k_0=1;
+    
+    m_edge=zeros(9,length(F));
+    m_edge([1:9],:)=ones(9,1).*(r(1,:)+r(2,:)+r(3,:))./(2*A(1,:)); 
+    M_edge=full(sparse(I,J,m_edge,length(V),length(V)));
+    figure('Name','M_edge')
+    spy(M_edge)
+    
+    g_edge=zeros(9,length(F));
+    g_edge([1,5,9],:)=((b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+6*r(s(i+1),:)+2*r(s(i+2),:))-2*(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))+(b(s(i+1),:).^2+c(s(i+1),:).^2).*(2*r(s(i),:)+6*r(s(i+1),:)+2*r(s(i+2),:)))./(240*A(i,:));
+    g_edge([2,3,6],:)=((b(s(i+2),:).*b(s(i),:)+c(s(i+2),:).*c(s(i),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))-(b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:))-(b(s(i+1),:).*b(s(i),:)+c(s(i+1),:).*c(s(i),:)).*(2*r(s(i),:)+2*r(s(i+1),:)+6*r(s(i+2),:))+(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(2*r(s(i),:)+r(s(i+1),:)+2*r(s(i+2),:)))./(240*A(i,:));
+    g_edge([4,7,8],:)=g_edge([2,3,6],:); %interaction integrals are symmetric in a triangle's edge indices
+    G_edge=sparse(I,J,g_edge,length(V),length(V));
+    figure('Name','G_edge')
+    spy(G_edge)
+    
+    g_node=zeros(9,length(F));
+    g_node([1,5,9],:)=(3*r(s(i),:)+r(s(i+1),:)+r(s(i+2),:))./(30*A(1,:));
+    g_node([2,3,6],:)=(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:))./(60*A(1,:));
+    g_node([4,7,8],:)=g_node([2,3,6],:); %interaction integrals are symmetric in a triangle's edge indices
+    G_node=sparse(I,J,g_node,length(V),length(V));
+    figure('Name','G_node')
+    spy(G_node)
+    
+    m=diag([2,2,2])
+    b=diag([1,1,1])
+    eigs(kG_Edge,M_edge)
+    
     V=V.';
     F=F.';
     
-    %basis rectangle mesh
-    %viewMeshandBasisFcts(V, F, w_nodes, w_edges_z, w_edges_r, 1, 1, 1/(6*(Nz+Nr)/2),z_max,r_max)
+    %basic rectangle mesh
+    if (Nz+Nr)/2 < 10
+        figure('Name','Mesh and basis functions')
+        viewMeshandBasisFcts(V, F, w_nodes, w_edges_z, w_edges_r, 1, 1, 1/(6*(Nz+Nr)/2),z_max,r_max)
+    else
+        fprintf('are you sure you want to display so many triangles? (%d,%d) \n', Nz, Nr)
+    end
     %fancy general mesh
-    %viewMeshandBasisFcts(V, F, w_nodes, w_edges_z, w_edges_r, 14, 2, vertices_length/20,z_max,r_max)
+    %{
+    if 20/vertices_length < 10
+        viewMeshandBasisFcts(V, F, w_nodes, w_edges_z, w_edges_r, 14, 2, vertices_length/20,z_max,r_max)
+    else
+        fprintf('are you sure you want to display so many triangles? (%d)', 20/vertices_length)
+    end
+    %}
 end 
-
-function M=assemble(V,F)
-
-end
