@@ -11,11 +11,18 @@ CFL=1; %Courant getal - Courant number
 
 dt=CFL/(c*sqrt((1/dx^2)+(1/dy^2))); %tijdstap - time step
 
-nt=300/CFL; %aantal tijdstappen in simulatie - number of time steps
+nt=500/CFL; %aantal tijdstappen in simulatie - number of time steps
 
-x_bron=round(1); y_bron=round(ny/2);
+x_bron=round(nx/2); y_bron=round(ny/2);
+
+x_recorder=x_bron; y_recorder=y_bron+50; %plaats recorder 1 - location receiver 1
+x_ref=x_bron;y_ref=y_bron+40; %plaats referentie 1 - location reference receiver 1
+
+%x_recorder2=x_bron+30; y_recorder2=y_bron; %plaats recorder 2 - location receiver 2
+%x_ref2=x_bron+20;y_ref2=y_bron; %plaats referentie 2 - location reference receiver 2
+
 A=1;k=2;t0=2.5E-2;sigma=5E-5;
-a=5
+a=5;
 global ox oy p
 ox = zeros(ny, nx+1); oy = zeros(ny+1, nx); p = zeros(ny, nx);
 
@@ -43,13 +50,13 @@ for it=1:nt
   
    bron=A*sin(2*k*c*(t)); %bron updaten bij nieuw tijd - update source for new time
    
-   for j=1:ny
-        p(j,1) = p(j,1)+bron; %druk toevoegen bij de drukvergelijking op bronlocatie - adding source term to propagation
-   end
+ 
+   p(:,1) = p(:,1)+bron; %druk toevoegen bij de drukvergelijking op bronlocatie - adding source term to propagation
+
    step_SIT_SIP_impedance(nx,ny,c,dx,dy,dt,a)   %propagatie over 1 tijdstap - propagate over one time step
   
-%     recorder(it) = p(x_recorder,y_recorder); %druk opnemen op recorders en referentieplaatsen - store p field at receiver locations
-%    recorder_ref(it) = p(x_ref,y_ref);
+     recorder(it) = p(x_recorder,y_recorder); %druk opnemen op recorders en referentieplaatsen - store p field at receiver locations
+    recorder_ref(it) = p(x_ref,y_ref);
 %    
 %   	recorder2(it) = p(x_recorder2,y_recorder2);
 %    recorder2_ref(it) = p(x_ref2,y_ref2);
@@ -58,7 +65,11 @@ for it=1:nt
    %presenting the p field   
    pcolor(p);view(0,90);axis equal;shading interp;caxis([-0.02*A 0.02*A]);title([num2str(it) '/' num2str(nt)]);hold on;
    xlim([1 nx+1]);ylim([1 ny+1]);
-   plot(x_bron,y_bron,'ks'); %plot(x_recorder,y_recorder,'ro');plot(x_ref,y_ref,'ko')
+   plot(x_bron,y_bron,'ks'); plot(x_recorder,y_recorder,'ro');plot(x_ref,y_ref,'ko')
 %    plot(x_recorder2,y_recorder2,'ro');plot(x_ref2,y_ref2,'ko');hold off;
 %   mov(it) = getframe; %wegcommentarieren voor simulatie vlugger te laten lopen - if this line is removed simulation runs much faster
 end
+
+n_of_samples=8192;
+
+post_Afout_Pfout(a,dx,dy,c,dt,x_ref,x_recorder,y_ref,y_recorder,x_bron,y_bron,recorder,recorder_ref,n_of_samples,tijdreeks,k)
