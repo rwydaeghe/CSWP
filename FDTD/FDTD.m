@@ -50,9 +50,8 @@ for it=1:nt
   
    bron=A*sin(2*k*c*(t)); %bron updaten bij nieuw tijd - update source for new time
    
- 
    p(:,1) = p(:,1)+bron; %druk toevoegen bij de drukvergelijking op bronlocatie - adding source term to propagation
-
+   
    step_SIT_SIP_impedance(nx,ny,c,dx,dy,dt,a)   %propagatie over 1 tijdstap - propagate over one time step
   
      recorder(it) = p(x_recorder,y_recorder); %druk opnemen op recorders en referentieplaatsen - store p field at receiver locations
@@ -67,7 +66,7 @@ for it=1:nt
    xlim([1 nx+1]);ylim([1 ny+1]);
    plot(x_bron,y_bron,'ks'); plot(x_recorder,y_recorder,'ro');plot(x_ref,y_ref,'ko')
 %    plot(x_recorder2,y_recorder2,'ro');plot(x_ref2,y_ref2,'ko');hold off;
-%   mov(it) = getframe; %wegcommentarieren voor simulatie vlugger te laten lopen - if this line is removed simulation runs much faster
+   mov(it) = getframe; %wegcommentarieren voor simulatie vlugger te laten lopen - if this line is removed simulation runs much faster
 end
 
 n_of_samples=8192;
