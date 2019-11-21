@@ -5,7 +5,7 @@ function ComputeEigsTE()
     %create basic rect mesh
     %%{
     z_max = 1; r_max = 1;
-    Nz=10; Nr=Nz;
+    Nz=15; Nr=Nz;
     [V, F] = meshRectangle([0,0],[z_max,r_max], Nz, Nr);
     V = V(:,1:2); %vertices blijkbaar 3D punten...
     %%}
