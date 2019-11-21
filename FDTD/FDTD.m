@@ -1,5 +1,5 @@
 clear all
-
+%test
 c=340; %geluidssnelheid - speed of sound (wave speed)
 dx=0.2; %ruimtelijke discretisatiestap - spatial discretisation step
 dy=dx;
