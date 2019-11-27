@@ -5,20 +5,24 @@ maxf=1/dt;
 df=maxf/n_of_samples;
 fas=zeros(n_of_samples,1);
 for loper=1:n_of_samples
-   fas(loper,1)=df*(loper);
+   fas(loper,1)=df*(loper-1);
 end
 
 %amplitudeverhouding en faseverhouding analytisch - analytical amplitude
 %ratio and phase difference
-r1=sqrt(((x_ref-x_bron)*dx)^2+((y_ref-y_bron)*dy)^2)
-theta1=atan(((y_ref-y_bron)*dy)/((x_ref-x_bron)*dx))
-r2=sqrt(((x_recorder-x_bron)*dx)^2+((y_recorder-y_bron)*dy)^2)
-theta2=atan(((y_recorder-y_bron)*dy)/((x_recorder-x_bron)*dx))
-aantalcellengepropageerd=sqrt((x_recorder-x_ref)^2+(y_recorder-y_ref)^2)
+r1=sqrt(((x_ref-x_bron)*dx)^2+((y_ref-y_bron)*dy)^2);
+theta1=atan(((y_ref-y_bron)*dy)/((x_ref-x_bron)*dx));
+r2=sqrt(((x_recorder-x_bron)*dx)^2+((y_recorder-y_bron)*dy)^2);
+theta2=atan(((y_recorder-y_bron)*dy)/((x_recorder-x_bron)*dx));
+aantalcellengepropageerd=sqrt((x_recorder-x_ref)^2+(y_recorder-y_ref)^2);
 
 k=2*pi*fas/c;
-f1 = analytic(1,a,k,10,r1,theta1)
-f2 = analytic(1,a,k,10,r2,theta2)
+f1=zeros(n_of_samples,1);
+f2=zeros(n_of_samples,1);
+for i=1:n_of_samples
+    f1(i)=analytic(1,a,k(i),50,r1,theta1);
+    f2(i)=analytic(1,a,k(i),50,r2,theta2);
+end
 Averhouding_theorie=abs(f1./f2);
 Pverschil_theorie=unwrap(angle(f1))-unwrap(angle(f2));
 
