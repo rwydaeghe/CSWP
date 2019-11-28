@@ -59,3 +59,47 @@
 %n=10;
 %w=zeros(n,3)
 %w(:,1)='hi'
+
+
+%F edges attempts and successes:
+
+    
+%attempt ndSparse vectorially O(n)
+%full(speye(length(F))).*ones(length(F),length(F),9)
+%working mask:
+%Coord=[zeros(length(F),1)+2,ones(length(F),2).*[1:length(F)].';
+%       zeros(length(F),1)+3,ones(length(F),2).*[1:length(F)].';
+%       zeros(length(F),1)+6,ones(length(F),2).*[1:length(F)].'];
+%masked_e=ndSparse.build(Coord,1,[9,length(F),length(F)]);
+
+%I=I.*ones(9,length(F),length(F))
+%J=J.*ones(9,length(F),length(F))
+%e=reshape([zeros(length(F)),speye(length(F)),speye(length(F)),zeros(length(F)),zeros(length(F)),speye(length(F)),zeros(length(F)),zeros(length(F)),zeros(length(F))],[9,length(F),length(F)]);
+%full(e)
+%e=ndSparse.build([:;:;2,3,6],speye(length(F)),[length(F),length(F),9])
+%e=zeros(9,length(F),length(F)); e([2,3,6],:,:)=1; 
+%ME2=ndSparse.build(I,J,e.*mask(u,:),length(V),length(V));
+%OLD O(n^2) algo:
+%e=zeros(9,length(F)); e([2,3,6],:)=1;
+%for u=1:length(F)
+%    ME2=sparse(I,J,e.*mask(u,:),length(V),length(V));
+%    Fedge(:,u) = imag(find2D([find2D(triu(ME2+ME2.'))==E.']));
+%end
+%for u = 1:length(F)
+%    Fedge = imag(find2D([find2D(L)==E.']))
+%    Fedge(:,u) = imag(find2D([find3D(ME2+permute(ME2,[2,1,3]))==E.']));
+%    Fedge(:,u) = imag(find2D(bsxfun(@(x,y) x==y, find3D(ME2+permute(ME2,[2,1,3])), E.')))
+%end
+
+%findPattern
+%Bcell=zeros(length(F),3);
+    %for u=1:length(F)
+    %    u
+    %    Bcell(u,:)
+    %    Bcell(u,:)=mat2cell(B,1,[windowstart(u)-1,windowsize(u),length(B)-windowend(u)+1])
+    %    %inter(u,:)=Bcell{u,2};
+    %    %Bcell{u,3}=mat2cell(B,1,[windowstart(u),windowsize(u),length(B)-windowend(u)])
+    %end
+    %r=Bcell(1,:)
+    %m=r{1,1}
+    %m{1,2}

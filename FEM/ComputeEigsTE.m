@@ -1,25 +1,23 @@
-function ComputeEigsTE()
-    clf
-    close all
-    addpath('./DistMesh') %Je kunt nu ook scriptjes vinden in die grote folder voor meshes
+function ComputeEigsTE(N)
+    %clf
+    %close all
+    %addpath('./DistMesh') %Je kunt nu ook scriptjes vinden in die grote folder voor meshes
     %create basic rect mesh
-    %{
+    %%{
     z_max = 1; r_max = 1;
-    Nz=3; Nr=Nz;
+    Nz=N; Nr=Nz;
     [V, F] = meshRectangle([0,0],[z_max,r_max], Nz, Nr);
     V = V(:,1:2); %vertices blijkbaar 3D punten...
-    %}
+    %%}
     
     %fancy general boundary mesh
-    %%{
+    %{
     z_max = pi; r_max = 1;
     vertices_length = 0.4;
     coord_fix=[0,0;0,boundary(0);z_max,0;z_max,boundary(z_max)];
     [V,F]=distmesh2d(inline('dfct(rz,@(rz) boundary(rz(:,1)))','rz'),@huniform,vertices_length,[0,0;z_max,r_max],coord_fix);
-    %%}
+    %}
     
-    % THE FAST WAY 
-    %%{
     V=V.'; F=F.';
     z=[V(1,F(1,:));V(1,F(2,:));V(1,F(3,:))]; r=[V(2,F(1,:));V(2,F(2,:));V(2,F(3,:))];
     %pre-allocate to increase performance
@@ -38,42 +36,39 @@ function ComputeEigsTE()
         for n=1:length(F)
             %idee vectorieel en function handle opchrijven als str. Die dan
             %omzetten naar code wanneer nodig
-            w_nodes{n,i}=@(z,r) (a(s(i),n)+b(s(i),n)*z+c(s(i),n)*r)./(2*A(i,n));
-            w_edges_z{n,i}=@(z,r) (a(s(i+1),n).*b(s(i+2),n)-a(s(i+2),n).*b(s(i+1),n)+(c(s(i+1),n).*b(s(i+2),n)-c(s(i+2),n).*b(s(i+1),n))*r)./(4*A(i,n).^2);
-            w_edges_r{n,i}=@(z,r) (a(s(i+1),n).*c(s(i+2),n)-a(s(i+2),n).*c(s(i+1),n)+(b(s(i+1),n).*c(s(i+2),n)-b(s(i+2),n).*c(s(i+1),n))*z)./(4*A(i,n).^2);
+            %w_nodes{n,i}=@(z,r) (a(s(i),n)+b(s(i),n)*z+c(s(i),n)*r)./(2*A(i,n));
+            %w_edges_z{n,i}=@(z,r) (a(s(i+1),n).*b(s(i+2),n)-a(s(i+2),n).*b(s(i+1),n)+(c(s(i+1),n).*b(s(i+2),n)-c(s(i+2),n).*b(s(i+1),n))*r)./(4*A(i,n).^2);
+            %w_edges_r{n,i}=@(z,r) (a(s(i+1),n).*c(s(i+2),n)-a(s(i+2),n).*c(s(i+1),n)+(b(s(i+1),n).*c(s(i+2),n)-b(s(i+2),n).*c(s(i+1),n))*z)./(4*A(i,n).^2);
         end
     end
 
     i=[1,2,3];
-    w_edges_z_total{n,1}=@(z,r) w_edges_z{n,1}(z,r)+w_edges_z{n,2}(z,r)+w_edges_z{n,3}(z,r);
-    w_edges_r_total{n,1}=@(z,r) w_edges_r{n,1}(z,r)+w_edges_r{n,2}(z,r)+w_edges_r{n,3}(z,r);
-    %%}
-    
+    %w_edges_z_total{n,1}=@(z,r) w_edges_z{n,1}(z,r)+w_edges_z{n,2}(z,r)+w_edges_z{n,3}(z,r);
+    %w_edges_r_total{n,1}=@(z,r) w_edges_r{n,1}(z,r)+w_edges_r{n,2}(z,r)+w_edges_r{n,3}(z,r);    
     
     I=F([1,2,3,1,2,3,1,2,3],:); J=F([1,1,1,2,2,2,3,3,3],:);
     
     %Create edge list
-    e=zeros(9,length(F)); e([2,3,6],:)=1;
+    e=zeros(9,length(F)); e([2,3,6],:)=1; e=e.*[1:length(F)];
     ME1=sparse(I,J,e,length(V),length(V)); E=find2D(triu(ME1+ME1.')); %type triu(..)==1,2 to get edge list of resp. once or doubly counted edges
     
-    %Write F as function of E
-    
-    %attempt ndSparse vectorially O(n)
-    %full(speye(length(F))).*ones(length(F),length(F),9)
-    %ndSparse(speye(length(F))).*ones(length(F),length(F))
-    %I=I.*ones(9,length(F),length(F)); J=J.*ones(9,length(F),length(F));
-    %e=ndSparse([zeros(length(F)),speye(length(F)),speye(length(F)),zeros(length(F)),zeros(length(F)),speye(length(F)),zeros(length(F)),zeros(length(F)),zeros(length(F))],[length(F),length(F),9])
-    %e=ndSparse.build([:;:;2,3,6],speye(length(F)),[length(F),length(F),9])
-    %e=zeros(9,length(F),length(F)); e([2,3,6],:,:)=1; 
-    %ME2=ndSparse.build(I,J,e.*mask(u,:),length(V),length(V));
-    
-    %sadly O(n^2)
-    Fedge=zeros(3,length(F)); mask=speye(length(F));
-    for u = 1:length(F)
-        ME2=sparse(I,J,e.*mask(u,:),length(V),length(V));
-        Fedge(:,u) = imag(find2D([find2D(triu(ME2+ME2.'))==E.']));
-    end
-    Fedge
+    %Write F as function of E      
+    Fedge=zeros(3,length(F)); Coordn=[I(:),J(:),e(:)];
+    ME2=ndSparse.build(Coordn(e(:)~=0,:),1,[length(V),length(V),length(F)]);
+    Fedge=find3D(findPattern(find3D(ME2+permute(ME2,[2,1,3]),'3d'), E.',length(F)),'2d');
+    %Fedge=find3D(bsxfun(@eq,find3D(ME2+permute(ME2,[2,1,3]),'3d'), E.'),'2d');
+    %Analyse visualisatie voor windows:
+    %{
+    hold on
+    plot([1:length(Fedge)],mean(Fedge))
+    hold on
+    plot([1:length(Fedge)],max(Fedge)-min(Fedge))
+    m=mean(Fedge); std=max(Fedge)-min(Fedge); 
+    output=[m(end)/length(F),max(std)/sqrt(length(F))];
+    %Conclusions:
+    %the evolution of the means goes as 1:2.5*length(F) with F
+    %the max of (max-min) is <2*sqrt(length(F))
+    %}
     I=F([1,2,3,1,2,3,1,2,3],:); J=F([1,1,1,2,2,2,3,3,3],:);
     I_edge=Fedge([1,2,3,1,2,3,1,2,3],:); J_edge=Fedge([1,1,1,2,2,2,3,3,3],:);
     
@@ -101,33 +96,76 @@ function ComputeEigsTE()
     %figure('Name','G_node')
     %spy(G_node)
         
-    length(E)-length(F)+1 %eig gwn #nodes volgens euler
-    sum(svd(full(M_edge))<0.01)
-    [Eedge,D]=eigs(M_edge,G_edge,3) %also not O(n)...
-    Eedge
+    %length(E)-length(F)+1 %eig gwn #nodes volgens euler
+    %sum(svd(full(M_edge))<0.01)
+    [Eedge,D]=eigs(M_edge,G_edge,3); %also not quite O(n)...
+    D
+    %Eedge
     
     V=V.'; %to do: write viewMesh so this isn't necessary(?)
     F=F.';
     
     %basic rectangle mesh
-    %{
+    %%{
     if (Nz+Nr)/2 < 10
-        figure('Name','Mesh and basis functions')
-        viewMeshandBasisFcts(V, F, w_nodes, w_edges_z, w_edges_r, 1, 1, 1/(6*(Nz+Nr)/2),z_max,r_max)
+        %figure('Name','Mesh and basis functions')
+        %viewMeshandBasisFcts(V, F, w_nodes, w_edges_z, w_edges_r, 1, 1, 1/(6*(Nz+Nr)/2),z_max,r_max)
     else
         fprintf('are you sure you want to display so many triangles? (%d,%d) \n', Nz, Nr)
     end
-    %}
+    %%}
     %fancy general mesh
-    %%{
+    %{
     if length(F) < 21
         viewMeshandBasisFcts(V, F, w_nodes, w_edges_z, w_edges_r, 14, 2, vertices_length/20,z_max,r_max)
     else
         fprintf('are you sure you want to display so many triangles? (%d) \n', length(F))
     end
-    %%}
+    %}
 end 
+
+function out = find3D(X,shape_set) 
+    [x,y,z]=size(X);
+    flat=mod(find(permute(ndSparse(X),[2,1,3]))-1,y)+1; %let op: doet al een triu (idk hoe?)
+    if shape_set == '3d'
+        out=reshape(flat(1:2:end)+j*flat(2:2:end),[3,1,z]);
+    elseif shape_set == '2d'
+        out=reshape(flat,[3,z]);
+    end
+end
 
 function out = find2D(X) %for elegance in one line and efficient double-element storage
     [x,y]=find(X); out = (x+j*y);
+end
+
+function out=findPattern(A,B,lenF) %find patternS A in data B and put them in array
+    %bedoeling: O(n) maken van out=bsxfun(@eq,A,B)
+    %%{
+    %Conclusions:
+    %the evolution of the means goes as 1:2.5*length(F) with F (at most)
+    %the max of (max-min) is <2*sqrt(length(F))=length(B) (at most) logical because
+    %that's just length(V)/length(E) for big meshes
+    
+    %create windows
+    mean=[1:length(B)/lenF:length(B)];
+    expon=0.6; %Voor rechthoek: 0.5 theoretisch, 0.6 praktisch. Als algemene mesh, stel expon 1 (maw, heel dit algoritme is nutteloos, je kunt al evengoed bsx one-line gebruiken)
+    halfwindowsize=length(B)^expon*ones(1,length(mean));
+    windowstart=mean-1.7*halfwindowsize; windowstart(windowstart<1)=1; windowstart=ceil(windowstart); %factor 1.7 via visualisatie trial en error...
+    windowend=mean+halfwindowsize; windowend(windowend>length(B))=length(B); windowend=floor(windowend);
+    windowsize=windowend-windowstart;
+    
+    %findPattern in windows using sparse matrices
+    B=B.*ones(1,length(B),lenF);
+    out_prov=zeros(3,length(B),lenF); %provisoir
+    for u=1:lenF
+        B(1,1:windowstart(u)-1,u)=0; B(1,windowend(u)+1:end,u)=0;
+    end
+    out=ndSparse(bsxfun(@eq,A,ndSparse(B)));
+    %Visualisatie
+    %%{
+    plot(mean,[mean;windowstart;windowend])
+    hold on
+    out_vis=mod(find(sum(out,1))-1,length(B))+1;    
+    scatter([1:length(B)/(length(out_vis)+1):length(B)],out_vis.')
+    %%}    
 end
