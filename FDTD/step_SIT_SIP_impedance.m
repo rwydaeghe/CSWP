@@ -1,4 +1,4 @@
-function step_SIT_SIP_impedance(nx,ny,c,dx,dy,dt,a)
+function step_SIT_SIP_impedance(nx,ny,c,dx,dy,dt,a,nc)
 global ox oy p
 Z=c; %surface impedance for non-reflecting boundary
 
