@@ -2,7 +2,7 @@ clear all
 %test
 tic
 c=340; %geluidssnelheid - speed of sound (wave speed)
-dx=0.04; %ruimtelijke discretisatiestap - spatial discretisation step
+dx=0.05; %ruimtelijke discretisatiestap - spatial discretisation step
 dy=dx;
 a=1;
 nx=round(6*a/dx);
@@ -20,7 +20,7 @@ CFL=1; %Courant getal - Courant number
 
 dt=CFL/(c*sqrt((1/dx^2)+(1/dy^2))); %tijdstap - time step
 
-nt=300/CFL; %aantal tijdstappen in simulatie - number of time steps
+nt=400/CFL; %aantal tijdstappen in simulatie - number of time steps
 
 x_bron=round(nx/2); y_bron=round(ny/2);
 
@@ -40,6 +40,13 @@ x_ref4=x_bron+round(2.5*a/dx);y_ref4=y_bron; %plaats referentie 3 - location ref
 
 
 A=1;k=20;t0=2.5E-2;sigma=5E-5;
+
+global q qx qy
+q = ones(nx,nx);
+qx = ones(nx,nx+1);
+qy = ones(nx+1,nx);
+
+circle(dx,dy,a,nx);
 
 global ox oy p
 ox = zeros(ny, nx+1); oy = zeros(ny+1, nx); p = zeros(ny, nx);
@@ -96,7 +103,7 @@ for it=1:nt
    xlim([1 nx+1]);ylim([1 ny+1]);
    plot(x_bron,y_bron,'ks'); plot(x_recorder,y_recorder,'ro');plot(x_ref,y_ref,'ko')
 %    plot(x_recorder2,y_recorder2,'ro');plot(x_ref2,y_ref2,'ko');hold off;
-   mov(it) = getframe; %wegcommentarieren voor simulatie vlugger te laten lopen - if this line is removed simulation runs much faster
+  mov(it) = getframe; %wegcommentarieren voor simulatie vlugger te laten lopen - if this line is removed simulation runs much faster
 end
 
 n_of_samples=8192;

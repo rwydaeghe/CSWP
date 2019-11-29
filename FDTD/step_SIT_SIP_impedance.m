@@ -1,5 +1,6 @@
 function step_SIT_SIP_impedance(nx,ny,c,dx,dy,dt,a,nc)
 global ox oy p
+global qx qy q
 Z=c; %surface impedance for non-reflecting boundary
 
 for i=1:nx
@@ -22,7 +23,9 @@ for i=2:nx
     oy(1,i) = 1/(1+Z*dt/dy)*((1-Z*dt/dy)*oy(1,i)-2*dt/dx*p(1,i));
     oy(ny+1,i) = 1/(1+Z*dt/dy)*((1-Z*dt/dy)*oy(ny+1,i)+2*dt/dx*p(ny,i));
 end
-circle(dx,dy,a)
+oy = oy.*qy;
+ox = ox.*qx;
+p = p.*q;
 
 
 end
