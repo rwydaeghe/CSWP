@@ -75,7 +75,7 @@ for it=1:nt
    
    %voorstellen drukveld
    %presenting the p field   
-   pcolor(p);view(0,90);axis equal;shading interp;caxis([-0.02*A 0.02*A]);title([num2str(it) '/' num2str(nt)]);hold on;
+   pcolor(p);view(0,90);axis equal;shading interp ;caxis([-0.02*A 0.02*A]);title([num2str(it) '/' num2str(nt)]);hold on;
    xlim([1 nx+1]);ylim([1 ny+1]);
    plot(x_bron,y_bron,'ks');plot(x_recorder,y_recorder,'ro');plot(x_ref,y_ref,'ko')
    plot(x_recorder2,y_recorder2,'ro');plot(x_ref2,y_ref2,'ko');hold off;
