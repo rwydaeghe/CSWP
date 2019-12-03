@@ -1,0 +1,6 @@
+data=zeros(50,1)
+for N=10:10:70
+    %figure('Name','%d (N)')
+    data(N)=ComputeEigsTE(N);
+end
+plot(1:70,sqrt(data.'))
