@@ -1,8 +1,8 @@
 function ComputeEigsTE(N)
     %N=180;
-    %clf
-    %close all
-    %addpath('./DistMesh') %Je kunt nu ook scriptjes vinden in die grote folder voor meshes
+    clf
+    close all
+    addpath('./DistMesh') %Je kunt nu ook scriptjes vinden in die grote folder voor meshes
     %create basic rect mesh
     %%{
     z_max = 1; r_max = 1;
@@ -19,7 +19,8 @@ function ComputeEigsTE(N)
     [V,F]=distmesh2d(inline('dfct(rz,@(rz) boundary(rz(:,1)))','rz'),@huniform,vertices_length,[0,0;z_max,r_max],coord_fix);
     %}
     
-    V=V.'; F=F.';
+    V=V.'
+    F=F.'
     z=[V(1,F(1,:));V(1,F(2,:));V(1,F(3,:))]; r=[V(2,F(1,:));V(2,F(2,:));V(2,F(3,:))];
     %pre-allocate to increase performance
     a = zeros(3,length(F)); b = zeros(3,length(F)); c = zeros(3,length(F)); A=zeros(1,length(F));
@@ -37,32 +38,43 @@ function ComputeEigsTE(N)
         for n=1:length(F)
             %idee vectorieel en function handle opchrijven als str. Die dan
             %omzetten naar code wanneer nodig
-            %w_nodes{n,i}=@(z,r) (a(s(i),n)+b(s(i),n)*z+c(s(i),n)*r)./(2*A(i,n));
-            %w_edges_z{n,i}=@(z,r) (a(s(i+1),n).*b(s(i+2),n)-a(s(i+2),n).*b(s(i+1),n)+(c(s(i+1),n).*b(s(i+2),n)-c(s(i+2),n).*b(s(i+1),n))*r)./(4*A(i,n).^2);
-            %w_edges_r{n,i}=@(z,r) (a(s(i+1),n).*c(s(i+2),n)-a(s(i+2),n).*c(s(i+1),n)+(b(s(i+1),n).*c(s(i+2),n)-b(s(i+2),n).*c(s(i+1),n))*z)./(4*A(i,n).^2);
+            w_nodes{n,i}=@(z,r) (a(s(i),n)+b(s(i),n)*z+c(s(i),n)*r)./(2*A(i,n));
+            w_edges_z{n,i}=@(z,r) (a(s(i+1),n).*b(s(i+2),n)-a(s(i+2),n).*b(s(i+1),n)+(c(s(i+1),n).*b(s(i+2),n)-c(s(i+2),n).*b(s(i+1),n))*r)./(4*A(i,n).^2);
+            w_edges_r{n,i}=@(z,r) (a(s(i+1),n).*c(s(i+2),n)-a(s(i+2),n).*c(s(i+1),n)+(b(s(i+1),n).*c(s(i+2),n)-b(s(i+2),n).*c(s(i+1),n))*z)./(4*A(i,n).^2);
         end
     end
 
     i=[1,2,3];
-    %w_edges_z_total{n,1}=@(z,r) w_edges_z{n,1}(z,r)+w_edges_z{n,2}(z,r)+w_edges_z{n,3}(z,r);
-    %w_edges_r_total{n,1}=@(z,r) w_edges_r{n,1}(z,r)+w_edges_r{n,2}(z,r)+w_edges_r{n,3}(z,r);    
+    w_edges_z_total{n,1}=@(z,r) w_edges_z{n,1}(z,r)+w_edges_z{n,2}(z,r)+w_edges_z{n,3}(z,r);
+    w_edges_r_total{n,1}=@(z,r) w_edges_r{n,1}(z,r)+w_edges_r{n,2}(z,r)+w_edges_r{n,3}(z,r);    
     
     I=F([1,2,3,1,2,3,1,2,3],:); J=F([1,1,1,2,2,2,3,3,3],:);
     
     %Create edge list
     e=zeros(9,length(F)); e([2,3,6],:)=1; e=e.*[1:length(F)];
-    ME1=sparse(I,J,e,length(V),length(V)); E=find2D(triu(ME1+ME1.')); %type triu(..)==1,2 to get edge list of resp. once or doubly counted edges
+    ME1=sparse(I,J,e,length(V),length(V)); E=find2D(triu(ME1+ME1.')) %type triu(..)==1,2 to get edge list of resp. once or doubly counted edges
+    % IMPORTANT type triu(..)==1,2 for boundary efficient!
+    % en bovendien haal je de directiviteit gewoon uit vector maken van E
+    % lijst door in te vullen met V lijst
+    % boundaries maken moet voor eigs?
     
     %Write F as function of E      
     Fedge=zeros(3,length(F)); Coordn=[I(:),J(:),e(:)];
     ME2=ndSparse.build(Coordn(e(:)~=0,:),1,[length(V),length(V),length(F)]);
     Fedge=find3D(findPattern(find3D(ME2+permute(ME2,[2,1,3]),'3d'), E.',length(F),N),'2d');
+    %equivalente for for is beginnen met eindpunt (imag) en tel vanaf de laatste. Schrap
+    %steeds wat is gebruikt tot je aan eerste node komt
+    %Je kunt puur daaruit bewijzen (en ook nakijken) dat ze allemaal
+    %negatief gerorienteerd staan!
+    Fedge([2,3],1:2:end)=Fedge([3,2],1:2:end)
+    
     I=F([1,2,3,1,2,3,1,2,3],:); J=F([1,1,1,2,2,2,3,3,3],:);
     I_edge=Fedge([1,2,3,1,2,3,1,2,3],:); J_edge=Fedge([1,1,1,2,2,2,3,3,3],:);
     
     m_edge=zeros(9,length(F));
     m_edge([1:9],:)=ones(9,1).*(r(1,:)+r(2,:)+r(3,:))./(2*A(1,:));
     %m_edge(:,2:2:end)=-m_edge(:,2:2:end); %tangential continuity
+    %m_edge([1,5,9],2:2:end)=-m_edge([1,5,9],2:2:end); %tangential continuity
     M_edge=sparse(I_edge,J_edge,m_edge,length(E),length(E));
     %figure('Name','M_edge')
     %spy(M_edge)
@@ -72,6 +84,7 @@ function ComputeEigsTE(N)
     g_edge([2,3,6],:)=((b(s(i+2),:).*b(s(i),:)+c(s(i+2),:).*c(s(i),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))-(b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:))-(b(s(i+1),:).*b(s(i),:)+c(s(i+1),:).*c(s(i),:)).*(2*r(s(i),:)+2*r(s(i+1),:)+6*r(s(i+2),:))+(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(2*r(s(i),:)+r(s(i+1),:)+2*r(s(i+2),:)))./(240*A(i,:))./(240*A(i,:));
     g_edge([4,7,8],:)=g_edge([2,3,6],:); %interaction integrals are symmetric in a triangle's edge indices
     %g_edge(:,2:2:end)=-g_edge(:,2:2:end); %tangential continuity
+    %g_edge([1,5,9],2:2:end)=-g_edge([1,5,9],2:2:end); %tangential continuity
     G_edge=sparse(I_edge,J_edge,g_edge,length(E),length(E));
     %figure('Name','G_edge')
     %spy(G_edge)
@@ -96,8 +109,8 @@ function ComputeEigsTE(N)
     %basic rectangle mesh
     %%{
     if (Nz+Nr)/2 < 10
-        %figure('Name','Mesh and basis functions')
-        %viewMeshandBasisFcts(V, F, w_nodes, w_edges_z, w_edges_r, 1, 1, 1/(6*(Nz+Nr)/2),z_max,r_max)
+        figure('Name','Mesh and basis functions')
+        viewMeshandBasisFcts(V, F, w_nodes, w_edges_z, w_edges_r, 1, 1, 1/(6*(Nz+Nr)/2),z_max,r_max)
     else
         fprintf('are you sure you want to display so many triangles? (%d,%d) \n', Nz, Nr)
     end
