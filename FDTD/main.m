@@ -34,8 +34,22 @@ A=1;fc=100;t0=2.5E-2;sigma=5E-5;
 
 %initialisatie snelheids- en drukvelden
 %initialisation of o and p fields 
+
+n=40;
 global ox oy p
-ox = zeros(nx+1, ny); oy = zeros(nx, ny+1); p = zeros(nx, ny); 
+ox = zeros(ny, nx+1); oy = zeros(ny+1, nx); p = zeros(ny, nx); 
+
+global oxl oyl plo plp
+oxl = zeros(ny, n); oyl = zeros(ny+1, n); plo = zeros(ny, n); plp = zeros(ny, n);
+
+global oxr oyr pro prp
+oxr = zeros(ny, n); oyr = zeros(ny+1, n); pro = zeros(ny, n); prp = zeros(ny, n);
+
+global oxu oyu puo pup
+oxu = zeros(n, nx+1); oyu = zeros(n, nx); puo = zeros(n, nx); pup = zeros(n, nx);
+
+global oxd oyd pdo pdp
+oxd = zeros(n, nx+1); oyd = zeros(n, nx); pdo = zeros(n, nx); pdp = zeros(n, nx);
 
 %film
 %movie
@@ -54,6 +68,8 @@ tijdreeks=zeros(nt,1);
 bron=0;
 
 figure;
+a=1;
+nc=1;
 
 %TIJDSITERATIE------------------------------------------------------
 %TIME ITTERATION----------------------------------------------------
@@ -65,7 +81,7 @@ for it=1:nt
    
    p(x_bron,y_bron) = p(x_bron,y_bron)+bron; %druk toevoegen bij de drukvergelijking op bronlocatie - adding source term to propagation
    
-   step_SIT_SIP_impedance(nx,ny,c,dx,dy,dt)   %propagatie over 1 tijdstap - propagate over one time step
+   step_SIT_SIP_impedance(nx,ny,c,dx,dy,dt,a,nc)   %propagatie over 1 tijdstap - propagate over one time step
   
     recorder(it) = p(x_recorder,y_recorder); %druk opnemen op recorders en referentieplaatsen - store p field at receiver locations
    recorder_ref(it) = p(x_ref,y_ref);
@@ -75,7 +91,7 @@ for it=1:nt
    
    %voorstellen drukveld
    %presenting the p field   
-   pcolor(p);view(0,90);axis equal;shading interp;caxis([-0.02*A 0.02*A]);title([num2str(it) '/' num2str(nt)]);hold on;
+   pcolor(pup);view(0,90);axis equal;shading interp;caxis([-0.02*A 0.02*A]);title([num2str(it) '/' num2str(nt)]);hold on;
    xlim([1 nx+1]);ylim([1 ny+1]);
    plot(x_bron,y_bron,'ks');plot(x_recorder,y_recorder,'ro');plot(x_ref,y_ref,'ko')
    plot(x_recorder2,y_recorder2,'ro');plot(x_ref2,y_ref2,'ko');hold off;

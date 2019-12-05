@@ -41,6 +41,8 @@ x_ref4=x_bron+round(2.5*a/dx);y_ref4=y_bron; %plaats referentie 3 - location ref
 
 A=1;k=20;t0=2.5E-2;sigma=5E-5;
 
+n = 25;
+
 global q qx qy
 q = ones(nx,nx);
 qx = ones(nx,nx+1);
@@ -50,6 +52,18 @@ circle(dx,dy,a,nx);
 
 global ox oy p
 ox = zeros(ny, nx+1); oy = zeros(ny+1, nx); p = zeros(ny, nx);
+
+global oxl oyl plo plp
+oxl = zeros(ny, n); oyl = zeros(ny+1, n); plo = zeros(ny, n); plp = zeros(ny, n);
+
+global oxr oyr pro prp
+oxr = zeros(ny, n); oyr = zeros(ny+1, n); pro = zeros(ny, n); prp = zeros(ny, n);
+
+global oxu oyu puo pup
+oxu = zeros(n, nx+1); oyu = zeros(n, nx); puo = zeros(n, nx); pup = zeros(n, nx);
+
+global oxd oyd pdo pdp
+oxd = zeros(n, nx+1); oyd = zeros(n, nx); pdo = zeros(n, nx); pdp = zeros(n, nx);
 
 %film
 %movie
