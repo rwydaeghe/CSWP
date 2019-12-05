@@ -91,6 +91,21 @@
 %    Fedge(:,u) = imag(find2D(bsxfun(@(x,y) x==y, find3D(ME2+permute(ME2,[2,1,3])), E.')))
 %end
 
+    %Analyse visualisatie voor windows:
+    %{
+    hold on
+    plot([1:length(Fedge)],mean(Fedge))
+    hold on
+    plot([1:length(Fedge)],max(Fedge)-min(Fedge))
+    m=mean(Fedge); std=max(Fedge)-min(Fedge); 
+    output=[m(end)/length(F),max(std)/sqrt(length(F))];
+    %Conclusions:
+    %the evolution of the means goes as 1:2.5*length(F) with F
+    %the max of (max-min) is <2*sqrt(length(F))
+    %}
+
+
+
 %findPattern
 %Bcell=zeros(length(F),3);
     %for u=1:length(F)
@@ -103,3 +118,14 @@
     %r=Bcell(1,:)
     %m=r{1,1}
     %m{1,2}
+    
+%B=B.*ones(1,length(B),lenF);
+%B2=zeros(1,length(B),lenF);
+%out_prov=zeros(3,length(B),lenF); %provisoir                
+
+%in for loop
+
+%B2(1,window1start(u):window1end(u),u)=B(1,window1start(u):window1end(u));
+%B2(1,window2start(u):window2end(u),u)=B(1,window2start(u):window2end(u));
+%B(1,1:window1start(u)-1,u)=0; B(1,window1end(u)+1:window2start(u)-1,u)=0; B(1,window2end(u)+1:end,u)=0;
+%out_prov(:,:,u)=sparse(bsxfun(@eq,A(:,:,u),B(:,:,u)));
