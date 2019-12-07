@@ -34,12 +34,12 @@ function ComputeEigsTE(N)
     % met alle drie w_edges en dan op figuur kijken naar pijltjes steeds
     % zelfde z comp). Axis is problematisch want daar moet
     % e_r=0 in TM op edges en het beste dat ik kan doen e_z=0 door
-    % horizontale edge =0 te doen. Dirichlet mantel is te doen door
-    % horizontale weg te doen en dan hebt ge e_z=0 zou gewild
+    % horizontale edge =0 te doen. Anders kun je zeggen dat het per default al ok is?
+    % Dirichlet mantel is te doen door horizontale weg te doen en dan hebt ge e_z=0 zou gewild
     
     %Create Fedge (F as function of E)
-    e=e.*[1:length(F)];
-    Fedge=zeros(3,length(F)); Coordn=[I(:),J(:),e(:)];
+    e=e.*[1:length(F)]; %introduces a face label when edges are counted
+    Fedge=zeros(3,length(F)); Coordn=[I(:),J(:),e(:)]; %labels in third dimension
     ME2=ndSparse.build(Coordn(e(:)~=0,:),1,[length(V),length(V),length(F)]);
     Fedge=find3D(findPattern(find3D(ME2+permute(ME2,[2,1,3]),'3d'), E.',length(F),N),'2d');
     %Fedge=find3D(findPattern(find3D(ME2+permute(ME2,[2,1,3]),'3d'), E_internal.',length(F),N),'2d');
