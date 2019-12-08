@@ -2,7 +2,7 @@ clear all
 %test
 tic
 c=340; %geluidssnelheid - speed of sound (wave speed)
-dx=0.05; %ruimtelijke discretisatiestap - spatial discretisation step
+dx=0.5; %ruimtelijke discretisatiestap - spatial discretisation step
 dy=dx;
 a=1;
 nx=round(6*a/dx);
@@ -39,31 +39,27 @@ x_recorder4=x_bron+round(2*a/dx); y_recorder4=y_bron; %plaats recorder 3 - locat
 x_ref4=x_bron+round(2.5*a/dx);y_ref4=y_bron; %plaats referentie 3 - location reference receiver 3
 
 
-A=1;k=20;t0=2.5E-2;sigma=5E-5;
+A=1;k=1;t0=2.5E-2;sigma=5E-5;
 
-n = 25;
+npml = 30;
+nsf = 20;
+n = nx+npml*2+2*nsf;
 
 global q qx qy
-q = ones(nx,nx);
-qx = ones(nx,nx+1);
-qy = ones(nx+1,nx);
+q = ones(n,n);
+qx = ones(n,n+1);
+qy = ones(n+1,n);
 
-circle(dx,dy,a,nx);
+circle(dx,dy,a,n);
 
-global ox oy p
-ox = zeros(ny, nx+1); oy = zeros(ny+1, nx); p = zeros(ny, nx);
+global oxref pref
+oxref = zeros(nt+1+200,n+1); pref=zeros(nt+1+200,n);
 
-global oxl oyl plo plp
-oxl = zeros(ny, n); oyl = zeros(ny+1, n); plo = zeros(ny, n); plp = zeros(ny, n);
+reference(dx,dt,n,nt,A,k,c)
 
-global oxr oyr pro prp
-oxr = zeros(ny, n); oyr = zeros(ny+1, n); pro = zeros(ny, n); prp = zeros(ny, n);
+global ox oy p pp 
+ox = zeros(n, n+1); oy = zeros(n+1, n); p = zeros(n, n); pp = zeros(n, n);
 
-global oxu oyu puo pup
-oxu = zeros(n, nx+1); oyu = zeros(n, nx); puo = zeros(n, nx); pup = zeros(n, nx);
-
-global oxd oyd pdo pdp
-oxd = zeros(n, nx+1); oyd = zeros(n, nx); pdo = zeros(n, nx); pdp = zeros(n, nx);
 
 %film
 %movie
@@ -93,11 +89,11 @@ for it=1:nt
    t = (it-1)*dt; tijdreeks(it)=t;
 	disp([num2str(it) '/' num2str(nt)]);
   
-   bron=A*sin(2*k*c*(t)); %bron updaten bij nieuw tijd - update source for new time
-   
-   p(:,1) = p(:,1)+bron; %druk toevoegen bij de drukvergelijking op bronlocatie - adding source term to propagation
-   
-   step_SIT_SIP_impedance(nx,ny,c,dx,dy,dt,a,nc)   %propagatie over 1 tijdstap - propagate over one time step
+%     bron=A*sin(k*c*(t)); %bron updaten bij nieuw tijd - update source for new time
+%    
+%     p(npml+1:nx+npml+2*nsf,npml+1) = bron; %druk toevoegen bij de drukvergelijking op bronlocatie - adding source term to propagation
+    
+    step_SIT_SIP_impedancepml(nx,ny,c,dx,dy,dt,npml,nsf,it)   %propagatie over 1 tijdstap - propagate over one time step
   
     recorder(it) = p(x_recorder,y_recorder); %druk opnemen op recorders en referentieplaatsen - store p field at receiver locations
     recorder_ref(it) = p(x_ref,y_ref);
@@ -113,8 +109,8 @@ for it=1:nt
    
    %voorstellen drukveld
    %presenting the p field   
-   pcolor(p);view(0,90);axis equal;shading interp;caxis([-0.02*A 0.02*A]);title([num2str(it) '/' num2str(nt)]);hold on;
-   xlim([1 nx+1]);ylim([1 ny+1]);
+   pcolor(p+pp);view(0,90);axis equal;shading interp;caxis([-340*A 340*A]);title([num2str(it) '/' num2str(nt)]);hold on;
+   xlim([1 n+1]);ylim([1 n+1]);
    plot(x_bron,y_bron,'ks'); plot(x_recorder,y_recorder,'ro');plot(x_ref,y_ref,'ko')
 %    plot(x_recorder2,y_recorder2,'ro');plot(x_ref2,y_ref2,'ko');hold off;
   mov(it) = getframe; %wegcommentarieren voor simulatie vlugger te laten lopen - if this line is removed simulation runs much faster

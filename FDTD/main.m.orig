@@ -9,8 +9,8 @@ c=340; %geluidssnelheid - speed of sound (wave speed)
 dx=0.2; %ruimtelijke discretisatiestap - spatial discretisation step
 dy=dx;
 
-nx=250; %aantal cellen in x richting - number of cells in x direction
-ny=250; %aantal cellen in y richting - number of cells in y direction
+nx=300; %aantal cellen in x richting - number of cells in x direction
+ny=300; %aantal cellen in y richting - number of cells in y direction
 
 CFL=1; %Courant getal - Courant number
 
@@ -35,7 +35,11 @@ A=1;fc=100;t0=2.5E-2;sigma=5E-5;
 %initialisatie snelheids- en drukvelden
 %initialisation of o and p fields 
 
+<<<<<<< HEAD
 n=250;
+=======
+n=100;
+>>>>>>> 1423f55260f2d68ed37027679884027d7706606c
 global ox oy p
 ox = zeros(ny, nx+1); oy = zeros(ny+1, nx); p = zeros(ny, nx); 
 
