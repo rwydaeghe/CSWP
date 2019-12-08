@@ -2,7 +2,7 @@ clear all
 %test
 tic
 c=340; %geluidssnelheid - speed of sound (wave speed)
-dx=0.05; %ruimtelijke discretisatiestap - spatial discretisation step
+dx=0.5; %ruimtelijke discretisatiestap - spatial discretisation step
 dy=dx;
 a=1;
 nx=round(6*a/dx);
