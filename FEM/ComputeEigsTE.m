@@ -1,5 +1,5 @@
 function ComputeEigsTE(N)
-    %N=80;
+    %N=120;
     clf; close all; addpath('./DistMesh'); %Je kunt nu ook scriptjes vinden in die grote folder voor meshes
     
     %% Create and analyze mesh
@@ -15,24 +15,28 @@ function ComputeEigsTE(N)
         [V,F]=distmesh2d(inline('dfct(rz,@(rz) boundary(rz(:,1)))','rz'),@huniform,vertices_length,[0,0;z_max,r_max],coord_fix);
     end
     V=V.'; F=F.';
-    %create E
+    F(:,1:2:end)=F([1,3,2],1:2:end); %tang cont
+    
+    %Create E
     I=F([1,2,3,1,2,3,1,2,3],:); J=F([1,1,1,2,2,2,3,3,3],:);
     e=zeros(9,length(F)); e([2,3,6],:)=1;
-    ME1=sparse(I,J,e,length(V),length(V)); E_boundary=find2D(triu(ME1+ME1.')==1); E_internal=find2D(triu(ME1+ME1.')==2); E=find2D(triu(ME1+ME1.'));
+    ME1=sparse(I,J,e,length(V),length(V)); 
+    E_boundary=find2D(triu(ME1+ME1.')==1); E_internal=find2D(triu(ME1+ME1.')==2); E=find2D(triu(ME1+ME1.'));
     
-    %Split E in internal and boundary
+    %Split E in internal and boundary edges
     if meshType == 'cylinder'
-        %dont do == 1?
+        %Maar O(N^2) want slechts boundary. 3rde grootste bottleneck na Fedge en eigs
         E_vec=round((V(:,imag(E_boundary))-V(:,real(E_boundary)))*(N-1)); %normalized to be logical array. round for floating point error
         E_hori=E_boundary(E_vec(1,:)==1); E_vert=E_boundary(E_vec(2,:)==1);
         E_axis=E_hori(V(2,real(E_hori))==0); E_mantle=E_hori(V(2,real(E_hori))==1); E_leftBound=E_vert(V(1,real(E_vert))==0); E_rightBound=E_vert(V(1,real(E_vert))==1);
         E_boundary=[E_leftBound,E_rightBound,E_axis,E_mantle];
+        E_boundary_edge=reshape(full(sum(sparse(bsxfun(@eq,E_boundary(:),E.').*[1:length(E)]),2)),[],4);
     end
     
     %RVWn?
     % neumann is altijd goed (kijk heel goed naar interpretatie d/dz e_z
     % met alle drie w_edges en dan op figuur kijken naar pijltjes steeds
-    % zelfde z comp). Axis is problematisch want daar moet
+    % zelfde z comp, of bewijs wiskundig). Axis is problematisch want daar moet
     % e_r=0 in TM op edges en het beste dat ik kan doen e_z=0 door
     % horizontale edge =0 te doen. Anders kun je zeggen dat het per default al ok is?
     % Dirichlet mantel is te doen door horizontale weg te doen en dan hebt ge e_z=0 zou gewild
@@ -41,16 +45,9 @@ function ComputeEigsTE(N)
     e=e.*[1:length(F)]; %introduces a face label when edges are counted
     Fedge=zeros(3,length(F)); Coordn=[I(:),J(:),e(:)]; %labels in third dimension
     ME2=ndSparse.build(Coordn(e(:)~=0,:),1,[length(V),length(V),length(F)]);
-    Fedge=find3D(findPattern(find3D(ME2+permute(ME2,[2,1,3]),'3d'), E.',length(F),N),'2d');
-    %Fedge=find3D(findPattern(find3D(ME2+permute(ME2,[2,1,3]),'3d'), E_internal.',length(F),N),'2d');
-    %Fedge=find3D(bsxfun(@eq,find3D(ME2+permute(ME2,[2,1,3]),'3d'), E_internal.'),'2d');
-    
-    %equivalente for for is beginnen met eindpunt (imag) en tel vanaf de laatste. Schrap
-    %steeds wat is gebruikt tot je aan eerste node komt
-    %Je kunt puur daaruit bewijzen (en ook nakijken) dat ze allemaal
-    %negatief gerorienteerd staan!
-    Fedge([2,3],1:2:end)=Fedge([3,2],1:2:end);
-    
+    Fedge=find3D(findPattern(find3D(ME2+permute(ME2,[2,1,3]),'3d'), E.',length(F),N),'2d'); %Dit algoritme behoudt de alternerende pos of neg orientatie
+    Fedge([1,2,3],2:2:end)=Fedge([3,1,2],2:2:end); %reshape(E(Fedge(:)),3,[])==F(2,:)+j*F(3,:) %(onschuldige) even permutatie zodat Fedge(1,:)<->F(1,:) en bewijs hiervoor  
+
     %% Additional variables. 
     %Pre-allocate to increase performance
     z=[V(1,F(1,:));V(1,F(2,:));V(1,F(3,:))]; r=[V(2,F(1,:));V(2,F(2,:));V(2,F(3,:))];
@@ -64,6 +61,7 @@ function ComputeEigsTE(N)
     b(i,:)=r(s(i+1),:)-r(s(i-1),:);
     c(i,:)=z(s(i-1),:)-z(s(i+1),:);
     A(i,:)=(b(s(i+1),:).*c(s(i+2),:)-b(s(i+2),:).*c(s(i+1),:))/2; %idem for all i
+    %a(:,2:2:end)=-a([1,3,2],2:2:end); b(:,2:2:end)=-b([1,3,2],2:2:end); c(:,2:2:end)=-c([1,3,2],2:2:end);
     
     %%{
     for i = 1:3
@@ -85,35 +83,44 @@ function ComputeEigsTE(N)
     
     m_edge=zeros(9,length(F));
     m_edge([1:9],:)=ones(9,1).*(r(1,:)+r(2,:)+r(3,:))./(2*A(1,:));
+    %m_edge([2,3],:)=m_edge([3,2],:); %tangential cont
     %m_edge(:,2:2:end)=-m_edge(:,2:2:end); %tangential continuity
     %m_edge([1,5,9],2:2:end)=-m_edge([1,5,9],2:2:end); %tangential continuity
     M_edge=sparse(I_edge,J_edge,m_edge,length(E),length(E));
-    %figure('Name','M_edge')
-    %spy(M_edge)
-    
+
     g_edge=zeros(9,length(F));
     g_edge([1,5,9],:)=((b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+6*r(s(i+1),:)+2*r(s(i+2),:))-2*(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))+(b(s(i+1),:).^2+c(s(i+1),:).^2).*(2*r(s(i),:)+2*r(s(i+1),:)+6*r(s(i+2),:)))./(240*A(i,:));
-    g_edge([2,3,6],:)=((b(s(i+2),:).*b(s(i),:)+c(s(i+2),:).*c(s(i),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))-(b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:))-(b(s(i+1),:).*b(s(i),:)+c(s(i+1),:).*c(s(i),:)).*(2*r(s(i),:)+2*r(s(i+1),:)+6*r(s(i+2),:))+(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(2*r(s(i),:)+r(s(i+1),:)+2*r(s(i+2),:)))./(240*A(i,:))./(240*A(i,:));
+    g_edge([2,6,3],:)=((b(s(i+2),:).*b(s(i),:)+c(s(i+2),:).*c(s(i),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))-(b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:))-(b(s(i+1),:).*b(s(i),:)+c(s(i+1),:).*c(s(i),:)).*(2*r(s(i),:)+2*r(s(i+1),:)+6*r(s(i+2),:))+(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(2*r(s(i),:)+r(s(i+1),:)+2*r(s(i+2),:)))./(240*A(i,:))./(240*A(i,:));
+    %tangential cont:
+    %switch in 2<->3 and 5<->9 for tangential continuity every other triangle
+    %g_edge([2,3,5,9],2:2:end)=g_edge([3,2,9,5],2:2:end);
     g_edge([4,7,8],:)=g_edge([2,3,6],:); %interaction integrals are symmetric in a triangle's edge indices
-    %g_edge(:,2:2:end)=-g_edge(:,2:2:end); %tangential continuity
-    %g_edge([1,5,9],2:2:end)=-g_edge([1,5,9],2:2:end); %tangential continuity
     G_edge=sparse(I_edge,J_edge,g_edge,length(E),length(E));
-    %figure('Name','G_edge')
-    %spy(G_edge)
     
     g_node=zeros(9,length(F));
     g_node([1,5,9],:)=(3*r(s(i),:)+r(s(i+1),:)+r(s(i+2),:))./(30*A(i,:));
-    g_node([2,3,6],:)=(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:))./(60*A(i,:));
+    g_node([2,6,3],:)=(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:))./(60*A(i,:));
     g_node([4,7,8],:)=g_node([2,3,6],:); %interaction integrals are symmetric in a triangle's edge indices
     G_node=sparse(I,J,g_node,length(V),length(V));
-    %figure('Name','G_node')
-    %spy(G_node)
         
-    %length(E)-length(F)+1; %eig gwn #nodes volgens euler
-    %sum(svd(full(M_edge))<0.01);
-    [Eedge,D]=eigs(M_edge,G_edge,5); %also not quite O(n)...
-    sparse(D);
-    %Eedge
+    %RVWn
+    G_edge(E_boundary_edge(:,4),:)=[];
+    G_edge(:,E_boundary_edge(:,4))=[];
+    M_edge(E_boundary_edge(:,4),:)=[];
+    M_edge(:,E_boundary_edge(:,4))=[];
+    %G_edge(E_boundary_edge(:,3),:)=[];
+    %G_edge(:,E_boundary_edge(:,3))=[];
+    %M_edge(E_boundary_edge(:,3),:)=[];
+    %M_edge(:,E_boundary_edge(:,3))=[];
+    
+    
+    length(E)-length(F)+1 %eig gwn #nodes volgens euler
+    sum(svd(full(M_edge))<0.01)
+    %[Eedge,D]=eig(full(M_edge),500*full(G_edge)); %blijkaar zou dit een juister resultaat geven dan eigs
+    eig(full(G_edge)) %is not positive definite bcs of orientation shifts. this leads to complex eigs
+    [Eedge,D]=eigs(M_edge,500*G_edge); %also not quite O(n)... %(5*pi)^2=250 en we willen geen complexe getallen
+    diag(D)
+    %sparse(D./max(D(:)))
     
     V=V.'; %to do: write viewMesh so this isn't necessary(?)
     F=F.';
@@ -123,6 +130,8 @@ function ComputeEigsTE(N)
         if (Nz+Nr)/2 < 11
             figure('Name','Mesh and basis functions')
             viewMeshandBasisFcts(V, F, w_nodes, w_edges_z, w_edges_r, 1, 1, 1/(6*(Nz+Nr)/2),z_max,r_max)
+            figure('Name','Mesh and basis functions2')
+            viewMeshandBasisFcts(V, F, w_nodes, w_edges_z, w_edges_r, 2, 1, 1/(6*(Nz+Nr)/2),z_max,r_max)
         else
             fprintf('are you sure you want to display so many triangles? (%d,%d) \n', Nz, Nr)
         end
@@ -133,7 +142,7 @@ function ComputeEigsTE(N)
             fprintf('are you sure you want to display so many triangles? (%d) \n', length(F))
         end
     end
-    %%}
+    %}
 end 
 
 function out = find3D(X,shape_set) 

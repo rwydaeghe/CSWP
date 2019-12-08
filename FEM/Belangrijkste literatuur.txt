@@ -1,11 +1,17 @@
 Basiscursus met vanalles en nog wat (oa. Jacobiaan idee van gehaald, bary coord stelsel, gans hoofdstuk drie voor begrip (ihb 3.7 local, global, assembly), stukjes h9,...
 http://hplgit.github.io/INF5620/doc/pub/H14/fem/pdf/main_fem-4print.pdf
 
-Boordevol interessante dingen. A posteriori ontdekt "sign data". Ook goeie referenties
+Sign data. Ook goeie referenties
 https://www.researchgate.net/publication/265729863_Fast_MATLAB_assembly_of_FEM_matrices_in_2D_and_3D_Edge_elements/link/5b9f7ad292851ca9ed112513/download
+!! w_edge is antisymmetrisch als orientatie-flip gebeurt i+1<->i+2 !!
+De paper (en logic) zegt dat dus (voor det B_K >0) de matrixelementen Mii één minteken krijgen terwijl Mij dat niet krijgt
 
-Dirichlet en Neumann:
+RANDVOORWAARDEN:
+Idee:
 https://www.phy.ornl.gov/csep/bf/node10.html
+
+Wiskundige verantwoording:
+https://scicomp.stackexchange.com/questions/5072/how-to-properly-apply-non-homogeneous-dirichlet-boundary-conditions-with-fem/5073#5073
 
 VECTORIZATIE (zie ook referentie paper 2):
 Hoofdpaper:
@@ -20,3 +26,6 @@ https://www.degruyter.com/downloadpdf/j/cmam.2011.11.issue-4/cmam-2011-0026/cmam
 Onvindbaar maar wordt zwaar gedissed door de rest
 "A. Hannukainen and M. Juntunen. Implementing the finite element assembly in interpreted languages. Preprint,
 Aalto University, 2012."
+
+Analytisch resultaat:
+https://www.eecis.udel.edu/~weile/ELEG648Spring06/Resources/Cylindrical.pdf

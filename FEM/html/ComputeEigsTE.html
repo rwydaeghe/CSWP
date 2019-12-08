@@ -1,0 +1,464 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>ComputeEigsTE</title><meta name="generator" content="MATLAB 9.7"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2019-12-07"><meta name="DC.source" content="ComputeEigsTE.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#3">Create and analyze mesh</a></li><li><a href="#4">Additional variables.</a></li><li><a href="#5">Build matrices and find eigenvalues</a></li></ul></div><pre class="codeinput"><span class="keyword">function</span> ComputeEigsTE(N)
+</pre><pre class="codeinput">    <span class="comment">%N=120;</span>
+    <span class="comment">%clf; close all; addpath('./DistMesh'); %Je kunt nu ook scriptjes vinden in die grote folder voor meshes</span>
+</pre><h2 id="3">Create and analyze mesh</h2><pre class="codeinput">    <span class="comment">%create V and F</span>
+    meshType=<span class="string">'cylinder'</span>;
+    z_max = 1; r_max = 1;
+    <span class="keyword">if</span> meshType==<span class="string">'cylinder'</span>
+        Nz=N; Nr=Nz;
+        [V, F] = meshRectangle([0,0],[z_max,r_max], Nz, Nr); V = V(:,1:2); <span class="comment">%vertices blijkbaar 3D punten...</span>
+    <span class="keyword">else</span>
+        vertices_length = 0.4;
+        coord_fix=[0,0;0,boundary(0);z_max,0;z_max,boundary(z_max)];
+        [V,F]=distmesh2d(inline(<span class="string">'dfct(rz,@(rz) boundary(rz(:,1)))'</span>,<span class="string">'rz'</span>),@huniform,vertices_length,[0,0;z_max,r_max],coord_fix);
+    <span class="keyword">end</span>
+    V=V.'; F=F.';
+    <span class="comment">%create E</span>
+    I=F([1,2,3,1,2,3,1,2,3],:); J=F([1,1,1,2,2,2,3,3,3],:);
+    e=zeros(9,length(F)); e([2,3,6],:)=1;
+    ME1=sparse(I,J,e,length(V),length(V)); E_boundary=find2D(triu(ME1+ME1.')==1); E_internal=find2D(triu(ME1+ME1.')==2); E=find2D(triu(ME1+ME1.'));
+
+    <span class="comment">%Split E in internal and boundary</span>
+    <span class="keyword">if</span> meshType == <span class="string">'cylinder'</span>
+        <span class="comment">%dont do == 1?</span>
+        E_vec=round((V(:,imag(E_boundary))-V(:,real(E_boundary)))*(N-1)); <span class="comment">%normalized to be logical array. round for floating point error</span>
+        E_hori=E_boundary(E_vec(1,:)==1); E_vert=E_boundary(E_vec(2,:)==1);
+        E_axis=E_hori(V(2,real(E_hori))==0); E_mantle=E_hori(V(2,real(E_hori))==1); E_leftBound=E_vert(V(1,real(E_vert))==0); E_rightBound=E_vert(V(1,real(E_vert))==1);
+        E_boundary=[E_leftBound,E_rightBound,E_axis,E_mantle];
+        reshape(full(sum(sparse(bsxfun(@eq,E_boundary(:),E.').*[1:length(E)]),2)),[],4); <span class="comment">%Maar O(N^2) want slechts boundary. 3rde grootste bottleneck na Fedge en eigs</span>
+    <span class="keyword">end</span>
+
+    <span class="comment">%RVWn?</span>
+    <span class="comment">% neumann is altijd goed (kijk heel goed naar interpretatie d/dz e_z</span>
+    <span class="comment">% met alle drie w_edges en dan op figuur kijken naar pijltjes steeds</span>
+    <span class="comment">% zelfde z comp). Axis is problematisch want daar moet</span>
+    <span class="comment">% e_r=0 in TM op edges en het beste dat ik kan doen e_z=0 door</span>
+    <span class="comment">% horizontale edge =0 te doen. Anders kun je zeggen dat het per default al ok is?</span>
+    <span class="comment">% Dirichlet mantel is te doen door horizontale weg te doen en dan hebt ge e_z=0 zou gewild</span>
+
+    <span class="comment">%Create Fedge (F as function of E)</span>
+    e=e.*[1:length(F)]; <span class="comment">%introduces a face label when edges are counted</span>
+    Fedge=zeros(3,length(F)); Coordn=[I(:),J(:),e(:)]; <span class="comment">%labels in third dimension</span>
+    ME2=ndSparse.build(Coordn(e(:)~=0,:),1,[length(V),length(V),length(F)]);
+    Fedge=find3D(findPattern(find3D(ME2+permute(ME2,[2,1,3]),<span class="string">'3d'</span>), E.',length(F),N),<span class="string">'2d'</span>);
+    <span class="comment">%Fedge=find3D(findPattern(find3D(ME2+permute(ME2,[2,1,3]),'3d'), E_internal.',length(F),N),'2d');</span>
+    <span class="comment">%Fedge=find3D(bsxfun(@eq,find3D(ME2+permute(ME2,[2,1,3]),'3d'), E_internal.'),'2d');</span>
+
+    <span class="comment">%equivalente for for is beginnen met eindpunt (imag) en tel vanaf de laatste. Schrap</span>
+    <span class="comment">%steeds wat is gebruikt tot je aan eerste node komt</span>
+    <span class="comment">%Je kunt puur daaruit bewijzen (en ook nakijken) dat ze allemaal</span>
+    <span class="comment">%negatief gerorienteerd staan!</span>
+    Fedge([2,3],1:2:end)=Fedge([3,2],1:2:end);
+</pre><pre class="codeoutput error">Not enough input arguments.
+
+Error in ComputeEigsTE (line 10)
+        Nz=N; Nr=Nz;
+</pre><h2 id="4">Additional variables.</h2><pre class="codeinput">    <span class="comment">%Pre-allocate to increase performance</span>
+    z=[V(1,F(1,:));V(1,F(2,:));V(1,F(3,:))]; r=[V(2,F(1,:));V(2,F(2,:));V(2,F(3,:))];
+    a = zeros(3,length(F)); b = zeros(3,length(F)); c = zeros(3,length(F)); A=zeros(1,length(F));
+    w_nodes = cell(length(F),3); <span class="comment">%matlab can't have function handles in arrays so use cells</span>
+    w_edges_z = cell(length(F),3); w_edges_r = cell(length(F),3);
+    w_edges_z_total = cell(length(F),1); w_edges_r_total = cell(length(F),1);
+
+    i=[1,2,3]; s=@(i) mod(i-1,3)+1; <span class="comment">%cyclical indexing</span>
+    a(i,:)=z(s(i+1),:).*r(s(i+2),:)-z(s(i+2),:).*r(s(i+1),:);
+    b(i,:)=r(s(i+1),:)-r(s(i-1),:);
+    c(i,:)=z(s(i-1),:)-z(s(i+1),:);
+    A(i,:)=(b(s(i+1),:).*c(s(i+2),:)-b(s(i+2),:).*c(s(i+1),:))/2; <span class="comment">%idem for all i</span>
+
+    <span class="comment">%%{</span>
+    <span class="keyword">for</span> i = 1:3
+        <span class="keyword">for</span> n=1:length(F)
+            <span class="comment">%idee vectorieel en function handle opchrijven als str. Die dan</span>
+            <span class="comment">%omzetten naar code wanneer nodig</span>
+            w_nodes{n,i}=@(z,r) (a(s(i),n)+b(s(i),n)*z+c(s(i),n)*r)./(2*A(i,n));
+            w_edges_z{n,i}=@(z,r) (a(s(i+1),n).*b(s(i+2),n)-a(s(i+2),n).*b(s(i+1),n)+(c(s(i+1),n).*b(s(i+2),n)-c(s(i+2),n).*b(s(i+1),n))*r)./(4*A(i,n).^2);
+            w_edges_r{n,i}=@(z,r) (a(s(i+1),n).*c(s(i+2),n)-a(s(i+2),n).*c(s(i+1),n)+(b(s(i+1),n).*c(s(i+2),n)-b(s(i+2),n).*c(s(i+1),n))*z)./(4*A(i,n).^2);
+            w_edges_z_total{n,1}=@(z,r) w_edges_z{n,1}(z,r)+w_edges_z{n,2}(z,r)+w_edges_z{n,3}(z,r);
+            w_edges_r_total{n,1}=@(z,r) w_edges_r{n,1}(z,r)+w_edges_r{n,2}(z,r)+w_edges_r{n,3}(z,r);
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    <span class="comment">%}</span>
+    i=[1,2,3];
+</pre><h2 id="5">Build matrices and find eigenvalues</h2><pre class="codeinput">    I_edge=Fedge([1,2,3,1,2,3,1,2,3],:); J_edge=Fedge([1,1,1,2,2,2,3,3,3],:);
+
+    m_edge=zeros(9,length(F));
+    m_edge([1:9],:)=ones(9,1).*(r(1,:)+r(2,:)+r(3,:))./(2*A(1,:));
+    <span class="comment">%m_edge(:,2:2:end)=-m_edge(:,2:2:end); %tangential continuity</span>
+    <span class="comment">%m_edge([1,5,9],2:2:end)=-m_edge([1,5,9],2:2:end); %tangential continuity</span>
+    M_edge=sparse(I_edge,J_edge,m_edge,length(E),length(E));
+    <span class="comment">%figure('Name','M_edge')</span>
+    <span class="comment">%spy(M_edge)</span>
+
+    g_edge=zeros(9,length(F));
+    g_edge([1,5,9],:)=((b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+6*r(s(i+1),:)+2*r(s(i+2),:))-2*(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))+(b(s(i+1),:).^2+c(s(i+1),:).^2).*(2*r(s(i),:)+2*r(s(i+1),:)+6*r(s(i+2),:)))./(240*A(i,:));
+    g_edge([2,3,6],:)=((b(s(i+2),:).*b(s(i),:)+c(s(i+2),:).*c(s(i),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))-(b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:))-(b(s(i+1),:).*b(s(i),:)+c(s(i+1),:).*c(s(i),:)).*(2*r(s(i),:)+2*r(s(i+1),:)+6*r(s(i+2),:))+(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(2*r(s(i),:)+r(s(i+1),:)+2*r(s(i+2),:)))./(240*A(i,:))./(240*A(i,:));
+    g_edge([4,7,8],:)=g_edge([2,3,6],:); <span class="comment">%interaction integrals are symmetric in a triangle's edge indices</span>
+    <span class="comment">%g_edge(:,2:2:end)=-g_edge(:,2:2:end); %tangential continuity</span>
+    <span class="comment">%g_edge([1,5,9],2:2:end)=-g_edge([1,5,9],2:2:end); %tangential continuity</span>
+    G_edge=sparse(I_edge,J_edge,g_edge,length(E),length(E));
+    <span class="comment">%figure('Name','G_edge')</span>
+    <span class="comment">%spy(G_edge)</span>
+
+    g_node=zeros(9,length(F));
+    g_node([1,5,9],:)=(3*r(s(i),:)+r(s(i+1),:)+r(s(i+2),:))./(30*A(i,:));
+    g_node([2,3,6],:)=(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:))./(60*A(i,:));
+    g_node([4,7,8],:)=g_node([2,3,6],:); <span class="comment">%interaction integrals are symmetric in a triangle's edge indices</span>
+    G_node=sparse(I,J,g_node,length(V),length(V));
+    <span class="comment">%figure('Name','G_node')</span>
+    <span class="comment">%spy(G_node)</span>
+
+    <span class="comment">%length(E)-length(F)+1; %eig gwn #nodes volgens euler</span>
+    <span class="comment">%sum(svd(full(M_edge))&lt;0.01);</span>
+    [Eedge,D]=eigs(M_edge,G_edge,5); <span class="comment">%also not quite O(n)...</span>
+    sparse(D);
+    <span class="comment">%Eedge</span>
+
+    V=V.'; <span class="comment">%to do: write viewMesh so this isn't necessary(?)</span>
+    F=F.';
+
+    <span class="comment">%%{</span>
+    <span class="keyword">if</span> meshType == <span class="string">'cylinder'</span>
+        <span class="keyword">if</span> (Nz+Nr)/2 &lt; 11
+            figure(<span class="string">'Name'</span>,<span class="string">'Mesh and basis functions'</span>)
+            viewMeshandBasisFcts(V, F, w_nodes, w_edges_z, w_edges_r, 1, 1, 1/(6*(Nz+Nr)/2),z_max,r_max)
+        <span class="keyword">else</span>
+            fprintf(<span class="string">'are you sure you want to display so many triangles? (%d,%d) \n'</span>, Nz, Nr)
+        <span class="keyword">end</span>
+    <span class="keyword">else</span>
+        <span class="keyword">if</span> length(F) &lt; 21
+            viewMeshandBasisFcts(V, F, w_nodes, w_edges_z, w_edges_r, 14, 2, vertices_length/20,z_max,r_max)
+        <span class="keyword">else</span>
+            fprintf(<span class="string">'are you sure you want to display so many triangles? (%d) \n'</span>, length(F))
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    <span class="comment">%%}</span>
+</pre><pre class="codeinput"><span class="keyword">end</span>
+
+<span class="keyword">function</span> out = find3D(X,shape_set)
+    [~,y,z]=size(X);
+    flat=mod(find(permute(ndSparse(X),[2,1,3]))-1,y)+1; <span class="comment">%let op: doet al een triu (idk hoe?)</span>
+    <span class="keyword">if</span> shape_set == <span class="string">'3d'</span>
+        out=reshape(flat(1:2:end)+j*flat(2:2:end),[3,1,z]);
+    <span class="keyword">elseif</span> shape_set == <span class="string">'2d'</span>
+        out=reshape(flat,[3,z]);
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> out = find2D(X) <span class="comment">%for elegance in one line and efficient double-element storage</span>
+    [x,y]=find(X); out = (x+j*y);
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> out=findPattern(A,B,lenF,N) <span class="comment">%find patternS A in data B and put them in array</span>
+    <span class="comment">%bedoeling: O(n) maken van out=bsxfun(@eq,A,B)</span>
+    <span class="keyword">if</span> N &lt;=7
+        out=bsxfun(@eq,A,B); <span class="comment">%algoritmes werken eigenlijk enkel voor grote N. Bovendien is dit minder overlay = sneller</span>
+    <span class="keyword">else</span>
+        <span class="comment">%create O(1) windows where pattern is probable to be found</span>
+        axis=[1:length(B)/lenF:length(B)];
+        mean2=axis-[1:1:lenF]/lenF*N+ones(1,lenF)*N;
+        mean1=mean2-ones(1,lenF)*(3.045*N-3.88); knik=floor(3*N*lenF/length(B)); mean1=[axis(1:knik)/axis(knik)*mean1(knik) mean1(knik+1:end)];
+        <span class="keyword">if</span> N&gt;=50
+            halfwindowsize=N/10;
+        <span class="keyword">else</span>
+            halfwindowsize=5;
+        <span class="keyword">end</span>
+        <span class="keyword">if</span> N&gt;=41
+            <span class="comment">%another speed hack for large N</span>
+            window1start=mean1; window1start(window1start&lt;1)=1; window1start(window1start&gt;length(B))=length(B); window1start=ceil(window1start);
+        <span class="keyword">else</span>
+            window1start=mean1-halfwindowsize; window1start(window1start&lt;1)=1; window1start(window1start&gt;length(B))=length(B); window1start=ceil(window1start);
+        <span class="keyword">end</span>
+        window1end=mean1+halfwindowsize; window1end(window1end&lt;1)=1; window1end(window1end&gt;length(B))=length(B); window1end=ceil(window1end);
+        window2start=mean2-halfwindowsize; window2start(window2start&lt;1)=1; window2start(window2start&gt;length(B))=length(B); window2start=ceil(window2start);
+        window2end=mean2+halfwindowsize; window2end(window2end&lt;1)=1; window2end(window2end&gt;length(B))=length(B); window2end=ceil(window2end);
+        coordwindow1=[]; coordwindow2=[];
+        <span class="keyword">for</span> u=1:lenF <span class="comment">%not too bad since operation itself is O(1)</span>
+            newbit1=window1start(u):window1end(u);
+            coordwindow1=[coordwindow1 [newbit1;u*ones(size(newbit1))]];
+            newbit2=window2start(u):window2end(u);
+            coordwindow2=[coordwindow2 [newbit2;u*ones(size(newbit2))]];
+        <span class="keyword">end</span>
+        coordwindows=[coordwindow1 coordwindow2]; sz=size(coordwindows); coordwindows=[coordwindows; ones(1,sz(2))];
+
+        <span class="comment">%findPattern in windows using sparse matrices</span>
+        B=ndSparse.build(coordwindows([3,1,2],:).', B(1,coordwindows(1,:)).');
+        out=ndSparse(bsxfun(@eq,A,B));
+        <span class="comment">%Visualisatie</span>
+<span class="comment">        %{
+</span><span class="comment">        plot(axis,[mean1;window1start;window1end;mean2;window2start;window2end])
+</span><span class="comment">        hold on
+</span><span class="comment">        out_vis=mod(find(sum(out,1))-1,length(B))+1;
+</span><span class="comment">        scatter([1:length(B)/(length(out_vis)+1):length(B)],out_vis.','.')
+</span><span class="comment">        %}
+</span>    <span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2019b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+function ComputeEigsTE(N)
+    %N=120;
+    %clf; close all; addpath('./DistMesh'); %Je kunt nu ook scriptjes vinden in die grote folder voor meshes
+    
+    %% Create and analyze mesh
+    %create V and F
+    meshType='cylinder';
+    z_max = 1; r_max = 1;    
+    if meshType=='cylinder'
+        Nz=N; Nr=Nz;
+        [V, F] = meshRectangle([0,0],[z_max,r_max], Nz, Nr); V = V(:,1:2); %vertices blijkbaar 3D punten...
+    else
+        vertices_length = 0.4;
+        coord_fix=[0,0;0,boundary(0);z_max,0;z_max,boundary(z_max)];
+        [V,F]=distmesh2d(inline('dfct(rz,@(rz) boundary(rz(:,1)))','rz'),@huniform,vertices_length,[0,0;z_max,r_max],coord_fix);
+    end
+    V=V.'; F=F.';
+    %create E
+    I=F([1,2,3,1,2,3,1,2,3],:); J=F([1,1,1,2,2,2,3,3,3],:);
+    e=zeros(9,length(F)); e([2,3,6],:)=1;
+    ME1=sparse(I,J,e,length(V),length(V)); E_boundary=find2D(triu(ME1+ME1.')==1); E_internal=find2D(triu(ME1+ME1.')==2); E=find2D(triu(ME1+ME1.'));
+    
+    %Split E in internal and boundary
+    if meshType == 'cylinder'
+        %dont do == 1?
+        E_vec=round((V(:,imag(E_boundary))-V(:,real(E_boundary)))*(N-1)); %normalized to be logical array. round for floating point error
+        E_hori=E_boundary(E_vec(1,:)==1); E_vert=E_boundary(E_vec(2,:)==1);
+        E_axis=E_hori(V(2,real(E_hori))==0); E_mantle=E_hori(V(2,real(E_hori))==1); E_leftBound=E_vert(V(1,real(E_vert))==0); E_rightBound=E_vert(V(1,real(E_vert))==1);
+        E_boundary=[E_leftBound,E_rightBound,E_axis,E_mantle];
+        reshape(full(sum(sparse(bsxfun(@eq,E_boundary(:),E.').*[1:length(E)]),2)),[],4); %Maar O(N^2) want slechts boundary. 3rde grootste bottleneck na Fedge en eigs
+    end
+    
+    %RVWn?
+    % neumann is altijd goed (kijk heel goed naar interpretatie d/dz e_z
+    % met alle drie w_edges en dan op figuur kijken naar pijltjes steeds
+    % zelfde z comp). Axis is problematisch want daar moet
+    % e_r=0 in TM op edges en het beste dat ik kan doen e_z=0 door
+    % horizontale edge =0 te doen. Anders kun je zeggen dat het per default al ok is?
+    % Dirichlet mantel is te doen door horizontale weg te doen en dan hebt ge e_z=0 zou gewild
+    
+    %Create Fedge (F as function of E)
+    e=e.*[1:length(F)]; %introduces a face label when edges are counted
+    Fedge=zeros(3,length(F)); Coordn=[I(:),J(:),e(:)]; %labels in third dimension
+    ME2=ndSparse.build(Coordn(e(:)~=0,:),1,[length(V),length(V),length(F)]);
+    Fedge=find3D(findPattern(find3D(ME2+permute(ME2,[2,1,3]),'3d'), E.',length(F),N),'2d');
+    %Fedge=find3D(findPattern(find3D(ME2+permute(ME2,[2,1,3]),'3d'), E_internal.',length(F),N),'2d');
+    %Fedge=find3D(bsxfun(@eq,find3D(ME2+permute(ME2,[2,1,3]),'3d'), E_internal.'),'2d');
+    
+    %equivalente for for is beginnen met eindpunt (imag) en tel vanaf de laatste. Schrap
+    %steeds wat is gebruikt tot je aan eerste node komt
+    %Je kunt puur daaruit bewijzen (en ook nakijken) dat ze allemaal
+    %negatief gerorienteerd staan!
+    Fedge([2,3],1:2:end)=Fedge([3,2],1:2:end);
+    
+    %% Additional variables. 
+    %Pre-allocate to increase performance
+    z=[V(1,F(1,:));V(1,F(2,:));V(1,F(3,:))]; r=[V(2,F(1,:));V(2,F(2,:));V(2,F(3,:))];
+    a = zeros(3,length(F)); b = zeros(3,length(F)); c = zeros(3,length(F)); A=zeros(1,length(F));
+    w_nodes = cell(length(F),3); %matlab can't have function handles in arrays so use cells
+    w_edges_z = cell(length(F),3); w_edges_r = cell(length(F),3); 
+    w_edges_z_total = cell(length(F),1); w_edges_r_total = cell(length(F),1);
+    
+    i=[1,2,3]; s=@(i) mod(i-1,3)+1; %cyclical indexing
+    a(i,:)=z(s(i+1),:).*r(s(i+2),:)-z(s(i+2),:).*r(s(i+1),:);
+    b(i,:)=r(s(i+1),:)-r(s(i-1),:);
+    c(i,:)=z(s(i-1),:)-z(s(i+1),:);
+    A(i,:)=(b(s(i+1),:).*c(s(i+2),:)-b(s(i+2),:).*c(s(i+1),:))/2; %idem for all i
+    
+    %%{
+    for i = 1:3
+        for n=1:length(F)
+            %idee vectorieel en function handle opchrijven als str. Die dan
+            %omzetten naar code wanneer nodig
+            w_nodes{n,i}=@(z,r) (a(s(i),n)+b(s(i),n)*z+c(s(i),n)*r)./(2*A(i,n));
+            w_edges_z{n,i}=@(z,r) (a(s(i+1),n).*b(s(i+2),n)-a(s(i+2),n).*b(s(i+1),n)+(c(s(i+1),n).*b(s(i+2),n)-c(s(i+2),n).*b(s(i+1),n))*r)./(4*A(i,n).^2);
+            w_edges_r{n,i}=@(z,r) (a(s(i+1),n).*c(s(i+2),n)-a(s(i+2),n).*c(s(i+1),n)+(b(s(i+1),n).*c(s(i+2),n)-b(s(i+2),n).*c(s(i+1),n))*z)./(4*A(i,n).^2);
+            w_edges_z_total{n,1}=@(z,r) w_edges_z{n,1}(z,r)+w_edges_z{n,2}(z,r)+w_edges_z{n,3}(z,r);
+            w_edges_r_total{n,1}=@(z,r) w_edges_r{n,1}(z,r)+w_edges_r{n,2}(z,r)+w_edges_r{n,3}(z,r);    
+        end
+    end
+    %}
+    i=[1,2,3];
+    
+    %% Build matrices and find eigenvalues
+    I_edge=Fedge([1,2,3,1,2,3,1,2,3],:); J_edge=Fedge([1,1,1,2,2,2,3,3,3],:);
+    
+    m_edge=zeros(9,length(F));
+    m_edge([1:9],:)=ones(9,1).*(r(1,:)+r(2,:)+r(3,:))./(2*A(1,:));
+    %m_edge(:,2:2:end)=-m_edge(:,2:2:end); %tangential continuity
+    %m_edge([1,5,9],2:2:end)=-m_edge([1,5,9],2:2:end); %tangential continuity
+    M_edge=sparse(I_edge,J_edge,m_edge,length(E),length(E));
+    %figure('Name','M_edge')
+    %spy(M_edge)
+    
+    g_edge=zeros(9,length(F));
+    g_edge([1,5,9],:)=((b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+6*r(s(i+1),:)+2*r(s(i+2),:))-2*(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))+(b(s(i+1),:).^2+c(s(i+1),:).^2).*(2*r(s(i),:)+2*r(s(i+1),:)+6*r(s(i+2),:)))./(240*A(i,:));
+    g_edge([2,3,6],:)=((b(s(i+2),:).*b(s(i),:)+c(s(i+2),:).*c(s(i),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))-(b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:))-(b(s(i+1),:).*b(s(i),:)+c(s(i+1),:).*c(s(i),:)).*(2*r(s(i),:)+2*r(s(i+1),:)+6*r(s(i+2),:))+(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(2*r(s(i),:)+r(s(i+1),:)+2*r(s(i+2),:)))./(240*A(i,:))./(240*A(i,:));
+    g_edge([4,7,8],:)=g_edge([2,3,6],:); %interaction integrals are symmetric in a triangle's edge indices
+    %g_edge(:,2:2:end)=-g_edge(:,2:2:end); %tangential continuity
+    %g_edge([1,5,9],2:2:end)=-g_edge([1,5,9],2:2:end); %tangential continuity
+    G_edge=sparse(I_edge,J_edge,g_edge,length(E),length(E));
+    %figure('Name','G_edge')
+    %spy(G_edge)
+    
+    g_node=zeros(9,length(F));
+    g_node([1,5,9],:)=(3*r(s(i),:)+r(s(i+1),:)+r(s(i+2),:))./(30*A(i,:));
+    g_node([2,3,6],:)=(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:))./(60*A(i,:));
+    g_node([4,7,8],:)=g_node([2,3,6],:); %interaction integrals are symmetric in a triangle's edge indices
+    G_node=sparse(I,J,g_node,length(V),length(V));
+    %figure('Name','G_node')
+    %spy(G_node)
+        
+    %length(E)-length(F)+1; %eig gwn #nodes volgens euler
+    %sum(svd(full(M_edge))<0.01);
+    [Eedge,D]=eigs(M_edge,G_edge,5); %also not quite O(n)...
+    sparse(D);
+    %Eedge
+    
+    V=V.'; %to do: write viewMesh so this isn't necessary(?)
+    F=F.';
+    
+    %%{
+    if meshType == 'cylinder'
+        if (Nz+Nr)/2 < 11
+            figure('Name','Mesh and basis functions')
+            viewMeshandBasisFcts(V, F, w_nodes, w_edges_z, w_edges_r, 1, 1, 1/(6*(Nz+Nr)/2),z_max,r_max)
+        else
+            fprintf('are you sure you want to display so many triangles? (%d,%d) \n', Nz, Nr)
+        end
+    else
+        if length(F) < 21
+            viewMeshandBasisFcts(V, F, w_nodes, w_edges_z, w_edges_r, 14, 2, vertices_length/20,z_max,r_max)
+        else
+            fprintf('are you sure you want to display so many triangles? (%d) \n', length(F))
+        end
+    end
+    %%}
+end 
+
+function out = find3D(X,shape_set) 
+    [~,y,z]=size(X);
+    flat=mod(find(permute(ndSparse(X),[2,1,3]))-1,y)+1; %let op: doet al een triu (idk hoe?)
+    if shape_set == '3d'
+        out=reshape(flat(1:2:end)+j*flat(2:2:end),[3,1,z]);
+    elseif shape_set == '2d'
+        out=reshape(flat,[3,z]);
+    end
+end
+
+function out = find2D(X) %for elegance in one line and efficient double-element storage
+    [x,y]=find(X); out = (x+j*y);
+end
+
+function out=findPattern(A,B,lenF,N) %find patternS A in data B and put them in array
+    %bedoeling: O(n) maken van out=bsxfun(@eq,A,B) 
+    if N <=7
+        out=bsxfun(@eq,A,B); %algoritmes werken eigenlijk enkel voor grote N. Bovendien is dit minder overlay = sneller
+    else
+        %create O(1) windows where pattern is probable to be found
+        axis=[1:length(B)/lenF:length(B)];
+        mean2=axis-[1:1:lenF]/lenF*N+ones(1,lenF)*N;
+        mean1=mean2-ones(1,lenF)*(3.045*N-3.88); knik=floor(3*N*lenF/length(B)); mean1=[axis(1:knik)/axis(knik)*mean1(knik) mean1(knik+1:end)];
+        if N>=50
+            halfwindowsize=N/10;
+        else
+            halfwindowsize=5;
+        end
+        if N>=41
+            %another speed hack for large N
+            window1start=mean1; window1start(window1start<1)=1; window1start(window1start>length(B))=length(B); window1start=ceil(window1start);
+        else
+            window1start=mean1-halfwindowsize; window1start(window1start<1)=1; window1start(window1start>length(B))=length(B); window1start=ceil(window1start);
+        end
+        window1end=mean1+halfwindowsize; window1end(window1end<1)=1; window1end(window1end>length(B))=length(B); window1end=ceil(window1end);
+        window2start=mean2-halfwindowsize; window2start(window2start<1)=1; window2start(window2start>length(B))=length(B); window2start=ceil(window2start);
+        window2end=mean2+halfwindowsize; window2end(window2end<1)=1; window2end(window2end>length(B))=length(B); window2end=ceil(window2end);
+        coordwindow1=[]; coordwindow2=[]; 
+        for u=1:lenF %not too bad since operation itself is O(1)
+            newbit1=window1start(u):window1end(u);
+            coordwindow1=[coordwindow1 [newbit1;u*ones(size(newbit1))]];
+            newbit2=window2start(u):window2end(u);
+            coordwindow2=[coordwindow2 [newbit2;u*ones(size(newbit2))]];
+        end    
+        coordwindows=[coordwindow1 coordwindow2]; sz=size(coordwindows); coordwindows=[coordwindows; ones(1,sz(2))];
+        
+        %findPattern in windows using sparse matrices
+        B=ndSparse.build(coordwindows([3,1,2],:).', B(1,coordwindows(1,:)).');
+        out=ndSparse(bsxfun(@eq,A,B));
+        %Visualisatie
+        %{
+        plot(axis,[mean1;window1start;window1end;mean2;window2start;window2end])
+        hold on
+        out_vis=mod(find(sum(out,1))-1,length(B))+1;    
+        scatter([1:length(B)/(length(out_vis)+1):length(B)],out_vis.','.')
+        %}
+    end
+end
+##### SOURCE END #####
+--></body></html>
