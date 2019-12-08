@@ -9,14 +9,14 @@ c=340; %geluidssnelheid - speed of sound (wave speed)
 dx=0.2; %ruimtelijke discretisatiestap - spatial discretisation step
 dy=dx;
 
-nx=250; %aantal cellen in x richting - number of cells in x direction
-ny=250; %aantal cellen in y richting - number of cells in y direction
+nx=300; %aantal cellen in x richting - number of cells in x direction
+ny=300; %aantal cellen in y richting - number of cells in y direction
 
 CFL=1; %Courant getal - Courant number
 
 dt=CFL/(c*sqrt((1/dx^2)+(1/dy^2))); %tijdstap - time step
 
-nt=400/CFL; %aantal tijdstappen in simulatie - number of time steps
+nt=600/CFL; %aantal tijdstappen in simulatie - number of time steps
 
 %locatie bron (midden van grid) en ontvangers
 %location of source(central) and receivers
@@ -35,7 +35,11 @@ A=1;fc=100;t0=2.5E-2;sigma=5E-5;
 %initialisatie snelheids- en drukvelden
 %initialisation of o and p fields 
 
-n=40;
+<<<<<<< HEAD
+n=250;
+=======
+n=100;
+>>>>>>> 1423f55260f2d68ed37027679884027d7706606c
 global ox oy p
 ox = zeros(ny, nx+1); oy = zeros(ny+1, nx); p = zeros(ny, nx); 
 
@@ -91,11 +95,7 @@ for it=1:nt
    
    %voorstellen drukveld
    %presenting the p field   
-<<<<<<< HEAD
-   pcolor(pup);view(0,90);axis equal;shading interp;caxis([-0.02*A 0.02*A]);title([num2str(it) '/' num2str(nt)]);hold on;
-=======
-   pcolor(p);view(0,90);axis equal;shading interp ;caxis([-0.02*A 0.02*A]);title([num2str(it) '/' num2str(nt)]);hold on;
->>>>>>> f70a691b9e3ba206d7186e795d9e62b037cfdd9f
+   pcolor(p);view(0,90);axis equal;shading interp;caxis([-0.02*A 0.02*A]);title([num2str(it) '/' num2str(nt)]);hold on;
    xlim([1 nx+1]);ylim([1 ny+1]);
    plot(x_bron,y_bron,'ks');plot(x_recorder,y_recorder,'ro');plot(x_ref,y_ref,'ko')
    plot(x_recorder2,y_recorder2,'ro');plot(x_ref2,y_ref2,'ko');hold off;
