@@ -3,12 +3,12 @@ http://hplgit.github.io/INF5620/doc/pub/H14/fem/pdf/main_fem-4print.pdf
 
 Sign data. Ook goeie referenties
 https://www.researchgate.net/publication/265729863_Fast_MATLAB_assembly_of_FEM_matrices_in_2D_and_3D_Edge_elements/link/5b9f7ad292851ca9ed112513/download
-!! w_edge is antisymmetrisch als orientatie-flip gebeurt i+1<->i+2 !!
-De paper (en logic) zegt dat dus (voor det B_K >0) de matrixelementen Mii één minteken krijgen terwijl Mij dat niet krijgt
+w_edge is antisymmetrisch als orientatie-flip gebeurt i+1<->i+2!
 
 RANDVOORWAARDEN:
 Idee:
-https://www.phy.ornl.gov/csep/bf/node10.html
+https://www.phy.ornl.gov/csep/bf/node10.html (nope da's ftdt en niet generalized eig prob)
+
 
 Wiskundige verantwoording:
 https://scicomp.stackexchange.com/questions/5072/how-to-properly-apply-non-homogeneous-dirichlet-boundary-conditions-with-fem/5073#5073
@@ -29,3 +29,9 @@ Aalto University, 2012."
 
 Analytisch resultaat:
 https://www.eecis.udel.edu/~weile/ELEG648Spring06/Resources/Cylindrical.pdf
+http://people.duke.edu/~qhliu/ee271/chap8.pdf (beter):
+	-e_r=0 in TM op axis 
+		-edge op axis automatisch bij grote N
+		-andere twee edges op axis moeten nul zijn (TO DO)
+	-e_m=0 in TE op axis
+
