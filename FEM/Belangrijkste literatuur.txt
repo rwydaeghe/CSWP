@@ -1,0 +1,22 @@
+Basiscursus met vanalles en nog wat (oa. Jacobiaan idee van gehaald, bary coord stelsel, gans hoofdstuk drie voor begrip (ihb 3.7 local, global, assembly), stukjes h9,...
+http://hplgit.github.io/INF5620/doc/pub/H14/fem/pdf/main_fem-4print.pdf
+
+Boordevol interessante dingen. A posteriori ontdekt "sign data". Ook goeie referenties
+https://www.researchgate.net/publication/265729863_Fast_MATLAB_assembly_of_FEM_matrices_in_2D_and_3D_Edge_elements/link/5b9f7ad292851ca9ed112513/download
+
+Dirichlet en Neumann:
+https://www.phy.ornl.gov/csep/bf/node10.html
+
+VECTORIZATIE (zie ook referentie paper 2):
+Hoofdpaper:
+https://hal.archives-ouvertes.fr/hal-00785101v1/document
+
+Algemener maar vermoedelijk iets slechtere performance:
+https://www.math.uci.edu/~chenlong/226/Ch3FEMCode.pdf
+
+Heel interessante en gelijkaardige dingen aan Cuvelier. Mss een paar nieuwe?
+https://www.degruyter.com/downloadpdf/j/cmam.2011.11.issue-4/cmam-2011-0026/cmam-2011-0026.pdf
+
+Onvindbaar maar wordt zwaar gedissed door de rest
+"A. Hannukainen and M. Juntunen. Implementing the finite element assembly in interpreted languages. Preprint,
+Aalto University, 2012."
