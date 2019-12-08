@@ -7,18 +7,18 @@ global oxu oyu puo pup
 global oxd oyd pdo pdp
 Z=c; %surface impedance for non-reflecting boundary
 
-km = 1;
-n=40;
+km = 1000;
+n=250;
 
 for i=1:nx
     for j=1:n
-        k = km*(((i-1/2)*dy)/n/dy)^4+100;
+        k = km*(((i-1/2)*dy)/n/dy)^4+1000;
         if j == 1
-            puo(j,i) = ((1-k/2*dt)*puo(j,i) - c^2*dt/dy*(oyu(j,i)-oy(ny+1,i)))/(1+k/2*dt);
+            pup(j,i) = pup(j,i) - c^2*dt/dx*(oyu(j,i)-oy(ny+1,i));
         else
-            puo(j,i) = ((1-k/2*dt)*puo(j,i) - c^2*dt/dy*(oyu(j,i)-oyu(j-1,i)))/(1+k/2*dt);
+            pup(j,i) = pup(j,i) - c^2*dt/dx*(oyu(j,i)-oyu(j-1,i));
         end
-        pup(j,i) = pup(j,i) - c^2*dt/dx*(oxu(j,i+1)-oxu(j,i));
+        puo(j,i) = ((1-k/2*dt)*puo(j,i) - c^2*dt/dy*(oxu(j,i+1)-oxu(j,i)))/(1+k/2*dt);
     end
 end
 
@@ -30,7 +30,9 @@ end
 
 for i=2:nx
     for j=1:n
-        oxu(j,i) = oxu(j,i) - dt*(1/dx*(pup(j,i)+puo(j,i)-pup(j,i-1)-puo(j,i-1)));
+        k = km*(((i)*dy)/n/dy)^4+1000;
+        oxu(j,i) = ((1-k/2*dt)*oxu(j,i) - dt*(1/dx*(pup(j,i)+puo(j,i)-pup(j,i-1)-puo(j,i-1))))/(1+k/2*dt);
+        
     end
 end
 
@@ -41,11 +43,11 @@ end
 
 for i=1:nx
     for j=1:n
-        k = km*(((i)*dy)/n/dy)^4+100;
+        k = km*(((i)*dy)/n/dy)^4;
         if j == n
             oyu(n,i) = 1/(1+Z*dt/dy)*((1-Z*dt/dy)*oyu(n,i)+2*dt/dx*(pup(n,i)+puo(n,i))); %look
         else
-            oyu(j,i) = ((1-k/2*dt)*oyu(j,i) - dt*(1/dy*(pup(j+1,i)+puo(j+1,i)-pup(j,i)-puo(j,i))))/(1+k/2*dt);
+            oyu(j,i) = oyu(j,i) - dt*(1/dy*(pup(j+1,i)+puo(j+1,i)-pup(j,i)-puo(j,i)));
         end
     end
 end
