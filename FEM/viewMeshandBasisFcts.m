@@ -1,4 +1,5 @@
-function viewMeshandBasisFcts(V,F,w_nodes,w_edges_z,w_edges_r,triangle,point,resolution,z_max,r_max)
+function viewMeshandBasisFcts(triangle,point,resolution,z_max,r_max)
+    global V; global F; global w_nodes; global w_edges_z; global w_edges_r;
     [Z,R] = meshgrid(0:resolution:z_max,0:resolution:r_max);
     
     hold on
@@ -7,7 +8,10 @@ function viewMeshandBasisFcts(V,F,w_nodes,w_edges_z,w_edges_r,triangle,point,res
     h.LevelList=round(h.LevelList,2);  %rounds levels to 2nd decimal place
     clabel(c,h);
     %show w_edge as vectorplot
-    quiver(Z,R,w_edges_z{triangle,point}(Z,R),w_edges_r{triangle,point}(Z,R),'black'); 
+    %quiver(Z,R,w_edges_z{triangle,point}(Z,R),w_edges_r{triangle,point}(Z,R),'black'); 
+    %Z,R
+    %Ez(Z,R)
+    quiver(Z,R,Ez(Z,R),Er(Z,R),'black'); 
     %show mesh
     patch('Vertices',[V, zeros(size(V,1), 1)],'Faces',F,'FaceColor','none','EdgeColor','black','LineWidth',1.5);
     %highlight selected triangle in blue

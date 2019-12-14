@@ -129,3 +129,18 @@
 %B2(1,window2start(u):window2end(u),u)=B(1,window2start(u):window2end(u));
 %B(1,1:window1start(u)-1,u)=0; B(1,window1end(u)+1:window2start(u)-1,u)=0; B(1,window2end(u)+1:end,u)=0;
 %out_prov(:,:,u)=sparse(bsxfun(@eq,A(:,:,u),B(:,:,u)));
+
+
+%used as an alternative to visualize the electric field without weights
+%{
+if size(tri,2) == 1
+    for edge=1:3
+        out(iz,ir)=out(iz,ir)+w_edges_z{tri,edge}(z,r);
+    end
+elseif size(tri,2) == 2
+    commonGlobalEdge=intersect(Fedge(:,tri(1)),Fedge(:,tri(2))); notThis1=real(E(commonGlobalEdge)); notThis2=imag(E(commonGlobalEdge));
+    firstTriangleOppositeNode=find((F(:,tri(1))~=notThis1 & F(:,tri(1))~=notThis2));
+    secondTriangleOppositeNode=find((F(:,tri(2))~=notThis1 & F(:,tri(2))~=notThis2));
+    out(iz,ir)=w_edges_z{tri(1),firstTriangleOppositeNode}(z,r)+w_edges_z{tri(2),secondTriangleOppositeNode}(z,r);
+end
+%}
