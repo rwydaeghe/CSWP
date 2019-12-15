@@ -1,7 +1,7 @@
 function ComputeEigsTE(meshSize)
     global N
     N=meshSize; 
-    %N=5; 
+    %N=10; 
     clf; close all; addpath('./DistMesh'); %Je kunt nu ook scriptjes vinden in die grote folder voor meshes
     
     %% Create and analyze mesh
@@ -32,8 +32,10 @@ function ComputeEigsTE(meshSize)
         E_vec=round((V(:,imag(E_boundary))-V(:,real(E_boundary)))*(N-1)); %normalized to be logical array. round for floating point error
         E_hori=E_boundary(E_vec(1,:)==1); E_vert=E_boundary(E_vec(2,:)==1);
         E_axis=E_hori(V(2,real(E_hori))==0); E_mantle=E_hori(V(2,real(E_hori))==1); E_leftBound=E_vert(V(1,real(E_vert))==0); E_rightBound=E_vert(V(1,real(E_vert))==1);
-        E_boundary=[E_leftBound,E_rightBound,E_axis,E_mantle];
-        E_boundary_edge=reshape(full(sum(sparse(bsxfun(@eq,E_boundary(:),E.').*[1:length(E)]),2)),[],4);
+        %E_boundary=[E_leftBound,E_rightBound,E_axis,E_mantle];
+        %E_boundary_edge=reshape(full(sum(sparse(bsxfun(@eq,E_boundary(:),E.').*[1:length(E)]),2)),[],4);
+        E_axis_edge=full(sum(sparse(bsxfun(@eq,E_axis(:),E.').*[1:length(E)]),2));
+        E_mantle_edge=full(sum(sparse(bsxfun(@eq,E_mantle(:),E.').*[1:length(E)]),2));
     end
     
     %RVWn?
@@ -111,24 +113,24 @@ function ComputeEigsTE(meshSize)
         
     %RVWn
     %%{
-    sz1=size(G_edge,1); sz2=size(E_boundary_edge(:,4),1);
-    G_edge(E_boundary_edge(:,4),:)=zeros(sz2,sz1);
-    G_edge(:,E_boundary_edge(:,4))=zeros(sz1,sz2);
-    M_edge(E_boundary_edge(:,4),:)=zeros(sz2,sz1);
-    M_edge(:,E_boundary_edge(:,4))=zeros(sz1,sz2);
-    for n=1:size(E_boundary_edge(:,4),1)
-        M_edge(E_boundary_edge(n,4),E_boundary_edge(n,4))=1;
-        %G_edge(E_boundary_edge(n,4),E_boundary_edge(n,4))=1;
+    sz1=size(G_edge,1); sz2=size(E_mantle_edge,1);
+    G_edge(E_mantle_edge,:)=zeros(sz2,sz1);
+    G_edge(:,E_mantle_edge)=zeros(sz1,sz2);
+    M_edge(E_mantle_edge,:)=zeros(sz2,sz1);
+    M_edge(:,E_mantle_edge)=zeros(sz1,sz2);
+    for n=1:size(E_mantle_edge,1)
+        M_edge(E_mantle_edge(n),E_mantle_edge(n))=1;
+        %G_edge(E_mantle_edge(n),E_mantle_edge(n))=1;
     end
     
-    sz1=size(G_edge,1); sz2=size(E_boundary_edge(:,3),1);
-    G_edge(E_boundary_edge(:,3),:)=zeros(sz2,sz1);
-    G_edge(:,E_boundary_edge(:,3))=zeros(sz1,sz2);
-    M_edge(E_boundary_edge(:,3),:)=zeros(sz2,sz1);
-    M_edge(:,E_boundary_edge(:,3))=zeros(sz1,sz2);
-    for n=1:size(E_boundary_edge(:,3),1)
-        M_edge(E_boundary_edge(n,3),E_boundary_edge(n,3))=1;
-        %G_edge(E_boundary_edge(n,3),E_boundary_edge(n,3))=1;
+    sz1=size(G_edge,1); sz2=size(E_axis_edge,1);
+    G_edge(E_axis_edge,:)=zeros(sz2,sz1);
+    G_edge(:,E_axis_edge)=zeros(sz1,sz2);
+    M_edge(E_axis_edge,:)=zeros(sz2,sz1);
+    M_edge(:,E_axis_edge)=zeros(sz1,sz2);
+    for n=1:size(E_axis_edge,1)
+        M_edge(E_axis_edge(n),E_axis_edge(n))=1;
+        %G_edge(E_axis_edge(n),E_axis_edge(n))=1;
     end
     %}
 
@@ -138,7 +140,7 @@ function ComputeEigsTE(meshSize)
     myeigs=eig(full(M_edge),full(G_edge));
     %sum(myeigs<1)
     %plot([1:1:size(myeigs)],myeigs)
-    global Eedge; [Eedge,D]=eig(full(M_edge),full(G_edge)); %also not quite O(n)... %(5*pi)^2=250 en we willen geen complexe getallen
+    global TM_modes; [TM_modes,D]=eig(full(M_edge),full(G_edge)); %also not quite O(n)... %(5*pi)^2=250 en we willen geen complexe getallen
     dnnz=sort(D(D>1)); 
     %plot([1:1:size(sort(myeigs))],sort(myeigs))
     %dnnz(1:5)
@@ -146,10 +148,12 @@ function ComputeEigsTE(meshSize)
     
     %%{
     if meshType == 'cylinder'
-        if (Nz+Nr)/2 < 11
-            visualizeElectricField(1/(6*(Nz+Nr)/2)/3,z_max,r_max)
-            viewMeshandBasisFcts(1, 1, 1/(6*(Nz+Nr)/2),z_max,r_max)
-            viewMeshandBasisFcts(2, 1, 1/(6*(Nz+Nr)/2),z_max,r_max)
+        if (Nz+Nr)/2 < 16
+            %res=1/(6*(Nz+Nr)/2);
+            res=0.018;
+            viewElectricField(2, res, z_max, r_max)
+            %viewMeshandBasisFcts(1, 1, res,z_max,r_max)
+            %viewMeshandBasisFcts(2, 1, res,z_max,r_max)
         else
             fprintf('are you sure you want to display so many triangles? (%d,%d) \n', Nz, Nr)
         end
@@ -188,16 +192,17 @@ function out=Enodes(Z,R)
     end    
 end
 
-function [Ez,Er]=ElectricField_TM(Z,R)
-    global w_edges_z; global w_edges_r; 
+function [Ez,Er]=ElectricField_TM(mode, Z,R)
+    global w_edges_z; global w_edges_r; global Fedge; global TM_modes
     Ez=zeros(size(Z,1),size(R,2)); Er=zeros(size(Z,1),size(R,2));
     for iz=1:size(Z,2)
         for ir=1:size(R,1)
-            z=Z(1,iz); r=R(ir,1); 
+            z=Z(1,iz); r=R(ir,1);
             for tri=trianglesImIn(z,r) %brute force but visualization is only meant for low N...
-                for edge=1:3
-                    Ez(iz,ir)=Ez(iz,ir)+w_edges_z{tri,edge}(z,r);
-                    Er(iz,ir)=Er(iz,ir)+w_edges_r{tri,edge}(z,r);                    
+                for localEdge=1:3
+                    %Fedge(localEdge,tri) vergeet niet dat er gelet is geweest op volgorde die overeenkomt komt
+                    Ez(iz,ir)=Ez(iz,ir)+TM_modes(Fedge(localEdge,tri),mode)*w_edges_z{tri,localEdge}(z,r);
+                    Er(iz,ir)=Er(iz,ir)+TM_modes(Fedge(localEdge,tri),mode)*w_edges_r{tri,localEdge}(z,r);                    
                 end
             end
         end
@@ -264,26 +269,27 @@ function out=findPattern(A,B) %find patternS A in data B and put them in array
     end
 end
 
-function visualizeElectricField(resolution,z_max,r_max)
-    global V; global F;
+function viewElectricField(mode,resolution,z_max,r_max)
+    global V; global F; global N;
     [Z,R] = meshgrid(0:resolution:z_max,0:resolution:r_max);
-    figure('Name','Electric field')
+    figure('Name',['Electric field mode ' num2str(mode) ' (N = ' num2str(N) ')'])
     hold on
-    %contourf(Z,R,Enodes(Z,R),1/(5*resolution),'--','ShowText','on');
     V=V.'; F=F.'; patch('Vertices',[V, zeros(size(V,1), 1)],'Faces',F,'FaceColor','none','EdgeColor','black','LineWidth',1.5); V=V.'; F=F.';     
-    [Ez,Er]=ElectricField_TM(Z,R);
-    quiver(Z,R,Ez.',Er.','black'); %let op transpose van matrices omdat meshgrid nogal vreemd is... Kijk naar Z en R
-
+    [Ez,Er]=ElectricField_TM(mode,Z,R); Ez=Ez.'; Er=Er.'; Eabs=sqrt(Ez.^2+Er.^2); %let op transpose van matrices omdat meshgrid nogal vreemd is... Kijk naar Z en R
+    surface(Z,R,smoothdata(Eabs,'sgolay',N));
+    %surface(Z,R,Eabs);
+    quiver(Z,R,Ez,Er,'black'); 
+    alpha 0.8
     hold off
 end
 
 function viewMeshandBasisFcts(triangle,point,resolution,z_max,r_max)
-    global V; global F; global w_nodes; global w_edges_z; global w_edges_r; global w_edges_z_total; global w_edges_r_total;
+    global V; global F; global w_nodes; global w_edges_z; global w_edges_r; global w_edges_z_total; global w_edges_r_total; global N
     V=V.'; %to do: write viewMesh so this isn't necessary(?)
     F=F.';
     [Z,R] = meshgrid(0:resolution:z_max,0:resolution:r_max);
-    
-    figure('Name','Mesh and basis functions')
+
+    figure('Name',['Mesh and basis function(s) of triangle ' num2str(triangle) ' and node ' num2str(point)  ' (N = ' num2str(N) ')'])
     hold on
     %show w_node as filled contourplot
     [c,h] = contourf(Z,R,w_nodes{triangle,point}(Z,R),1/(2*resolution),'--','ShowText','on');
