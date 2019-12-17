@@ -4,6 +4,7 @@ http://hplgit.github.io/INF5620/doc/pub/H14/fem/pdf/main_fem-4print.pdf
 Sign data. Ook goeie referenties
 https://www.researchgate.net/publication/265729863_Fast_MATLAB_assembly_of_FEM_matrices_in_2D_and_3D_Edge_elements/link/5b9f7ad292851ca9ed112513/download
 w_edge is antisymmetrisch als orientatie-flip gebeurt i+1<->i+2!
+LET OP: Als je ooit Gauss quadratuur integratie wilt vectorizeren, die mannen doen het!!
 
 RANDVOORWAARDEN:
 Idee:
