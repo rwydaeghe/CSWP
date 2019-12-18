@@ -144,3 +144,7 @@ elseif size(tri,2) == 2
     out(iz,ir)=w_edges_z{tri(1),firstTriangleOppositeNode}(z,r)+w_edges_z{tri(2),secondTriangleOppositeNode}(z,r);
 end
 %}
+
+%poging tot vectorizeren van buitenste for loop als je Ez,Er,Ephi
+%berekent... heeft geen nut gehad want kost met for loop is toch al
+%O(n*1/n)

@@ -2,7 +2,7 @@ function ComputeEigsTE(meshSize, mode)
     global N
     N=meshSize; 
     %N=10; 
-    %mode=4;    
+    %mode=2;    
     clf; close all; addpath('./DistMesh'); %Je kunt nu ook scriptjes vinden in die grote folder voor meshes
     
     %% Create and analyze mesh
@@ -218,7 +218,6 @@ function out=trianglesImIn(z,r)
         wnode1=w_nodes{n,1}(z,r);
         wnode2=w_nodes{n,2}(z,r);
         wnode3=w_nodes{n,3}(z,r);        
-        %if (w_nodes{n,1}(z,r) <= 1 & w_nodes{n,1}(z,r) >= 0) & (w_nodes{n,2}(z,r) <= 1 & w_nodes{n,2}(z,r) >= 0) & (w_nodes{n,3}(z,r) <= 1 & w_nodes{n,3}(z,r) >= 0)
         if (wnode1 <= 1+eps('single') & wnode1 >= 0-eps('single')) & (wnode2 <= 1+eps('single') & wnode2 >= 0-eps('single')) & (wnode3 <= 1+eps('single') & wnode3 >= 0-eps('single'))
             if abs(wnode1)<eps('single')
                 out=[out n+j*1];
@@ -258,6 +257,7 @@ function [Ez,Er]=ElectricField_TM(mode,Z,R)
     global w_edges_z; global w_edges_r; global Fedge; global V; global F; global s; global TM_modes
     Ez=zeros(size(Z,1),size(R,2)); Er=zeros(size(Z,1),size(R,2)); %DOFs=zeros(size(Z,1),size(R,2));
     %brute force but visualization is only meant for low N...
+    %w_edges_z{1,1}(Z,R)
     for iz=1:size(Z,2)
         for ir=1:size(R,1)
             z=Z(1,iz); r=R(ir,1);
