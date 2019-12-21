@@ -17,9 +17,9 @@ for i=1:Nh
     for j=1:Nr+1
         r=roff+(j-1)*dr;
         if j == 1
-            or(j,i) = 1/(1+Z*dt/dr)*((1-Z*dt/dr)*or(j,i)-2*dt/dr*p(1,i));
+            %or(j,i) = 1/(1+Z*dt/dr)*((1-Z*dt/dr)*or(j,i)-2*dt/dr*p(1,i));
         elseif j == Nr+1
-            or(j,i) = 1/(1+Z*dt/dr)*((1-Z*dt/dr)*or(j,i)+2*dt/dr*p(j-1,i));
+            %or(j,i) = 1/(1+Z*dt/dr)*((1-Z*dt/dr)*or(j,i)+2*dt/dr*p(j-1,i));
         else
              or(j,i) = or(j,i) - dt*(1/dr*(p(j,i)-p(j-1,i)));
         end
