@@ -53,6 +53,8 @@ function ComputeEigsTE(meshSize, mode)
         %E_axis_edge=assocAxisEdge(find(~sum(sparse(bsxfun(@eq,assocAxisEdge.',E_axis_edge)),1)));
         
         %TE
+        E_leftBound_node=find(sparse(bsxfun(@eq,V(1,:),0))).';
+        E_rightBound_node=find(sparse(bsxfun(@eq,V(1,:),1))).';
         E_axis_node=find(sparse(bsxfun(@eq,V(2,:),0))).';
         E_mantle_node=find(sparse(bsxfun(@eq,V(2,:),1))).';
     end
@@ -114,10 +116,11 @@ function ComputeEigsTE(meshSize, mode)
     G_node=sparse(I,J,g_node,length(V),length(V));
     
     m_node=zeros(9,size(F,2));
+    %assumpties hier want we weten niet hoe die expansie gaat...
     m_node(1:9,:)=c(i_index,:)/6+c(j_index,:)/6+(c(i_index,:).*c(j_index,:)+b(i_index,:).*b(j_index,:))./(2*abs(A(i_index,:))).*(r(1,:)+r(2,:)+r(3,:))/6;
     M_node=sparse(I,J,m_node,length(V),length(V));
         
-    %BCs
+    %BCs    
     sz1=size(G_edge,1); sz2=size(E_mantle_edge,1);
     G_edge(E_mantle_edge,:)=zeros(sz2,sz1);
     G_edge(:,E_mantle_edge)=zeros(sz1,sz2);
@@ -125,6 +128,7 @@ function ComputeEigsTE(meshSize, mode)
     M_edge(:,E_mantle_edge)=zeros(sz1,sz2);
     for n=1:size(E_mantle_edge,1)
         M_edge(E_mantle_edge(n),E_mantle_edge(n))=1;
+        %G_edge(E_mantle_edge(n),E_mantle_edge(n))=1;
     end
     
     sz1=size(G_edge,1); sz2=size(E_axis_edge,1);
@@ -134,15 +138,25 @@ function ComputeEigsTE(meshSize, mode)
     M_edge(:,E_axis_edge)=zeros(sz1,sz2);
     for n=1:size(E_axis_edge,1)
         M_edge(E_axis_edge(n),E_axis_edge(n))=1;
+        %G_edge(E_axis_edge(n),E_axis_edge(n))=1;
     end
 
-    sz1=size(G_node,1); sz2=size(E_mantle_node,1);
-    G_node(E_mantle_node,:)=zeros(sz2,sz1);
-    G_node(:,E_mantle_node)=zeros(sz1,sz2);
-    M_node(E_mantle_node,:)=zeros(sz2,sz1);
-    M_node(:,E_mantle_node)=zeros(sz1,sz2);
-    for n=1:size(E_mantle_node,1)
-        M_node(E_mantle_node(n),E_mantle_node(n))=1;
+    sz1=size(G_node,1); sz2=size(E_leftBound_node,1);
+    G_node(E_leftBound_node,:)=zeros(sz2,sz1);
+    G_node(:,E_leftBound_node)=zeros(sz1,sz2);
+    M_node(E_leftBound_node,:)=zeros(sz2,sz1);
+    M_node(:,E_leftBound_node)=zeros(sz1,sz2);
+    for n=1:size(E_leftBound_node,1)
+        M_node(E_leftBound_node(n),E_leftBound_node(n))=1;
+    end
+    
+    sz1=size(G_node,1); sz2=size(E_rightBound_node,1);
+    G_node(E_rightBound_node,:)=zeros(sz2,sz1);
+    G_node(:,E_rightBound_node)=zeros(sz1,sz2);
+    M_node(E_rightBound_node,:)=zeros(sz2,sz1);
+    M_node(:,E_rightBound_node)=zeros(sz1,sz2);
+    for n=1:size(E_rightBound_node,1)
+        M_node(E_rightBound_node(n),E_rightBound_node(n))=1;
     end
     
     sz1=size(G_node,1); sz2=size(E_axis_node,1);
@@ -153,20 +167,33 @@ function ComputeEigsTE(meshSize, mode)
     for n=1:size(E_axis_node,1)
         M_node(E_axis_node(n),E_axis_node(n))=1;
     end
+    
+    sz1=size(G_node,1); sz2=size(E_mantle_node,1);
+    G_node(E_mantle_node,:)=zeros(sz2,sz1);
+    G_node(:,E_mantle_node)=zeros(sz1,sz2);
+    M_node(E_mantle_node,:)=zeros(sz2,sz1);
+    M_node(:,E_mantle_node)=zeros(sz1,sz2);
+    for n=1:size(E_mantle_node,1)
+        M_node(E_mantle_node(n),E_mantle_node(n))=1;
+    end
 
     %length(E)-size(F,2)+1 %eig gwn #nodes volgens euler
+    %svd(full(M_edge)); %sum(svd(full(M_edge))<eps('single'))
     %sum(svd(full(M_edge))<eps('single') | abs(svd(full(M_edge))-1)<eps('single'))
     %[Eedge,D]=eig(full(M_edge),500*full(G_edge)); %blijkbaar zou dit een juister resultaat geven dan eigs
     %myeigs=eig(full(M_edge),full(G_edge));
     %sum(myeigs<1)
     %plot([1:1:size(sort(myeigs))],sort(myeigs))
-    global TM_modes; [TM_modes,D_TM]=eigs(M_edge,G_edge,5,26.9); 
-    global TE_modes; [TE_modes,D_TE]=eigs(M_node,G_node,5,0.00012);
-    %global TM_modes; [TM_modes,D_TM]=eig(full(M_edge),full(G_edge));
-    %global TE_modes; [TE_modes,D_TE]=eig(full(M_node),full(G_node));
+    %global TM_modes; [TM_modes,D_TM]=eigs(M_edge,G_edge,5,24.11); 
+    %global TE_modes; [TE_modes,D_TE]=eigs(M_node,G_node,5,5);
+    global TM_modes; [TM_modes,D_TM]=eig(full(M_edge),full(G_edge));
+    global TE_modes; [TE_modes,D_TE]=eig(full(M_node),full(G_node));
     
+    %sort the eigenvalues and associated eigenmodes from low to high 
     [dnnz_TM,sortingIndices]=sort(D_TM(D_TM>eps('single'))); TM_modes=TM_modes(:,sortingIndices);
     [dnnz_TE,sortingIndices]=sort(D_TE(D_TE>eps('single'))); TE_modes=TE_modes(:,sortingIndices);
+    dnnz_TM
+    dnnz_TE
     
     disp(['TM resonant frequency :' num2str(dnnz_TM(mode))])
     disp(['TE resonant frequency :' num2str(dnnz_TE(mode))])
@@ -238,10 +265,10 @@ end
 function Ephi=ElectricField_TE(mode,Z,R,triList)
     global w_nodes; global F; global TE_modes
     Ephi=zeros(size(Z,1),size(R,2));
-
+    
     for n=1:size(F,2) %we only evaluate the function on local support so operation is O(n*1/n) cost effective        
         nnzZRindex=find(triList(:,:,n)); nnzZCoord=Z(nnzZRindex); nnzRCoord=R(nnzZRindex);
-        Ephi(nnzZRindex)=sum(reshape(TE_modes(F(:,n),mode),1,1,3,1).*w_nodes(nnzZCoord,nnzRCoord,1:3,n),3); %divide by amount for averaging effect
+        Ephi(nnzZRindex)=sum(reshape(TE_modes(F(:,n),mode),1,1,3,1).*w_nodes(nnzZCoord,nnzRCoord,1:3,n),3); %don't average as it's perfectly continuous
     end
 end
 
@@ -249,10 +276,11 @@ function [Ez,Er]=ElectricField_TM(mode,Z,R,triList)
     global w_edges_z; global w_edges_r; global Fedge; global F; global TM_modes
     Ez=zeros(size(Z)); Er=zeros(size(Z));
     
+    triAmounts=sum(triList,4); %for averaging effect on edges    
     for n=1:size(F,2) %we only evaluate the function on local support so operation is O(n*1/n) cost effective        
         nnzZRindex=find(triList(:,:,n)); nnzZCoord=Z(nnzZRindex); nnzRCoord=R(nnzZRindex);
-        Ez(nnzZRindex)=sum(reshape(TM_modes(Fedge(:,n),mode),1,1,3,1).*w_edges_z(nnzZCoord,nnzRCoord,1:3,n),3); %divide by amount for averaging effect
-        Er(nnzZRindex)=sum(reshape(TM_modes(Fedge(:,n),mode),1,1,3,1).*w_edges_r(nnzZCoord,nnzRCoord,1:3,n),3);
+        Ez(nnzZRindex)=Ez(nnzZRindex)+sum(reshape(TM_modes(Fedge(:,n),mode),1,1,3,1).*w_edges_z(nnzZCoord,nnzRCoord,1:3,n),3)./triAmounts(nnzZRindex);
+        Er(nnzZRindex)=Er(nnzZRindex)+sum(reshape(TM_modes(Fedge(:,n),mode),1,1,3,1).*w_edges_r(nnzZCoord,nnzRCoord,1:3,n),3)./triAmounts(nnzZRindex);
     end
 end
 
@@ -330,6 +358,8 @@ function viewElectricField(mode,resolution,z_max,r_max)
     surface(Z,R,Ez); view(30,90-30); 
     %quiver(Z,R,Ez,Er,'black'); 
     alpha 0.75
+    xlabel('$z$ [$m$]','interpreter','latex')
+    ylabel('$r$ [$m$]','interpreter','latex')
     hold off
 
     figure('Name',['Er in TM mode ' num2str(mode) ' (N = ' num2str(N) ')'])
@@ -340,6 +370,8 @@ function viewElectricField(mode,resolution,z_max,r_max)
     surface(Z,R,Er); view(30,90-30); 
     %quiver(Z,R,Ez,Er,'black'); 
     alpha 0.75
+    xlabel('$z$ [$m$]','interpreter','latex')
+    ylabel('$r$ [$m$]','interpreter','latex')
     hold off
     
     figure('Name',['Ephi in TE mode ' num2str(mode) ' (N = ' num2str(N) ')'])
@@ -350,6 +382,8 @@ function viewElectricField(mode,resolution,z_max,r_max)
     surface(Z,R,Ephi); view(30,90-30); 
     %quiver(Z,R,Ephi,Ephi,'black'); 
     alpha 0.75
+    xlabel('$z$ [$m$]','interpreter','latex')
+    ylabel('$r$ [$m$]','interpreter','latex')
     hold off
 end
 
