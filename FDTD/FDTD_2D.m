@@ -22,7 +22,7 @@ PML = 10;
 t_end = 15e-9;
 % Excitation source amplitude and frequency [Hz]
 E0 = 1.0;     
-f = 2.0e+9;   % 2 GHz
+f = 50.0e+9;   % 2 GHz
 % Number of materials (include vacuum backrgound)
 number_of_materials = 2;
 % Background relative permittivity, relative permeability and absolute
@@ -344,7 +344,7 @@ for T = 1:number_of_iterations
     subplot(1,2,1);    
 	pcolor(Y(PML:ny-PML),X(PML:nx-PML),Ez(PML:nx-PML,PML:ny-PML));
 	shading interp;
-	caxis([-E0 E0]);
+	caxis([-E0/10 E0/10]);
 	axis image;
 	colorbar;
 	title('E_{z}(x,y)', 'FontSize',18, 'FontName', 'Arial', 'FontWeight', 'Bold');

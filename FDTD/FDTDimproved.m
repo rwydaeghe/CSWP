@@ -13,6 +13,15 @@ if mod(nx,2)==1
     nx = nx+1;
 end
 ny=nx; %ny chosen equal to nx
+
+dr=dx; %spatial discretisation step in r direction in polar grid (dr = dx, cells need to have approx the same size)
+nr=6; %number of cells in r direction (only 4)
+roff=a; %inner edge polar grid (starts at the edge of the circle)
+ro=roff+nr*dr; %outer edge polar grid
+dh=dr/roff; %spatial discretisation step in theta direction
+nh=round(2*pi/dh); %number of cells in theta direction
+dh=2*pi/nh; %dh recalculated so the whole 0..2pi interval is covered
+
 npml=30; %number of cells pml
 km=1000; %max k for pml
 nsf=20; %number of cells sf region
@@ -27,6 +36,12 @@ global ox oy px py
 ox = zeros(n, n+1); oy = zeros(n+1, n); px = zeros(n, n); py = zeros(n, n);
 %first index y direction, second index x direction
 
+%% Set p or oh matrices
+
+global p or oh 
+or = zeros(nr+1, nh); oh = zeros(nr, nh); p = zeros(nr, nh);
+%first index y direction, second index x direction
+
 %% Set reference array induced ox and px (plane wave coming from the left side)
 
 global oxref pxref
@@ -35,10 +50,10 @@ oxref = zeros(1,nx+1); pxref = zeros(1,nx);
 %% Set circle
 
 global q qx qy %matrices which after elementwise multiplication with the px py ox and oy matrix induce the boundary condition for the fields, using the staircase method to get the circle geometry
-q = ones(nx,nx);
-qx = ones(nx,nx+1);
-qy = ones(nx+1,nx);
-circle(dx,dy,a,nx);
+q = ones(n,n);
+qx = ones(n,n+1);
+qy = ones(n+1,n);
+circlewithpolar(dx,dy,a,n);
 
 %% Set k values for the whole region (to have pml)
 
@@ -89,8 +104,12 @@ for it = 1:nt
     oxref(1,nx+1) = 1/(1+c*dt/dx)*((1-c*dt/dx)*oxref(1,nx+1)+2*dt/dx*pxref(1,nx));
     %     plot(1:dx:1+nx*dx,oxref)
     %    mov(it) = getframe;
+    
+    %% Interpolate for boundary conditions on rectangular grid
+    interpolouteredgerectanglegrid(nr,nh,n,dx,dy,dh,dr,ro)
+    
 
-    %% Update total p fields
+    %% Update total p fields rectangular grid
 
     px = ((1-kpx*dt/2).*px - c^2*dt/dx*(ox(:,2:n+1)-ox(:,1:n)))./(1+kpx*dt/2);
     py = ((1-kpy*dt/2).*py - c^2*dt/dy*(oy(2:n+1,:)-oy(1:n,:)))./(1+kpy*dt/2);
@@ -101,7 +120,7 @@ for it = 1:nt
     px(npml+nsf+1:n-npml-nsf+1,n-npml-nsf+1) = px(npml+nsf+1:n-npml-nsf+1,n-npml-nsf+1) - c^2*dt/dx*(oxref(1,nx+1)); %substract (-) oxref from total field on the left(-)
 
     
-    %% Update total o fields
+    %% Update total o fields rectangular grid
     
     ox(1:n,2:n) = ((1-kox(1:n,2:n)*dt/2).*ox(1:n,2:n) - dt/dx*(px(1:n,2:n)+py(1:n,2:n)-px(1:n,1:n-1)-py(1:n,1:n-1)))./(1+kox(1:n,2:n)*dt/2);
     ox(1:n,1) = 1/(1+Z*dt/dx)*((1-Z*dt/dx)*ox(1:n,1)-2*dt/dx*(px(1:n,1)+py(1:n,1)));
@@ -122,11 +141,21 @@ for it = 1:nt
     
     %% Ensure boundary cylinder
     
-     ox(npml+nsf+1:npml+nsf+ny,npml+nsf+1:npml+nsf+nx+1) = ox(npml+nsf+1:npml+nsf+ny,npml+nsf+1:npml+nsf+nx+1).*qx;
-     oy(npml+nsf+1:npml+nsf+ny+1,npml+nsf+1:npml+nsf+nx) = oy(npml+nsf+1:npml+nsf+ny+1,npml+nsf+1:npml+nsf+nx).*qy;
-     px(npml+nsf+1:npml+nsf+ny,npml+nsf+1:npml+nsf+nx) = px(npml+nsf+1:npml+nsf+ny,npml+nsf+1:npml+nsf+nx).*q;
-     py(npml+nsf+1:npml+nsf+ny,npml+nsf+1:npml+nsf+nx) = py(npml+nsf+1:npml+nsf+ny,npml+nsf+1:npml+nsf+nx).*q;
-    
+     %ox(npml+nsf+1:npml+nsf+ny,npml+nsf+1:npml+nsf+nx+1) = ox(npml+nsf+1:npml+nsf+ny,npml+nsf+1:npml+nsf+nx+1).*qx;
+     %oy(npml+nsf+1:npml+nsf+ny+1,npml+nsf+1:npml+nsf+nx) = oy(npml+nsf+1:npml+nsf+ny+1,npml+nsf+1:npml+nsf+nx).*qy;
+     %px(npml+nsf+1:npml+nsf+ny,npml+nsf+1:npml+nsf+nx) = px(npml+nsf+1:npml+nsf+ny,npml+nsf+1:npml+nsf+nx).*q;
+     %py(npml+nsf+1:npml+nsf+ny,npml+nsf+1:npml+nsf+nx) = py(npml+nsf+1:npml+nsf+ny,npml+nsf+1:npml+nsf+nx).*q;
+     
+     ox = ox.*qx;
+     oy = oy.*qy;
+     px = px.*q;
+     py = py.*q;
+     %% Interpolate for boundary conditions on polar grid (outer edge)
+     interpolouteredgecircle(nr,nh,ro,dr,dh,n,dx,dy)
+     
+     %% FDTD on polar grid
+     newstep(nr,nh,c,dr,dh,dt,roff)
+     
     %% Presenting the p field
     
     pcolor(px+py);view(0,90);axis equal;shading interp;caxis([-340*A 340*A]);title([num2str(it) '/' num2str(nt)]);hold on;

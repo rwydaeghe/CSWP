@@ -1,9 +1,9 @@
-dx=0.1;
+dx=0.2;
 dy=dx;
 a=2;
-ri=0.01;
-ro=0.01+1*dx;
-dh=dx/ro;
+ri=a;
+ro=ri+4*dx;
+dh=dx/ri;
 dh=2*pi/round(2*pi/dh);
 r=[ri:dx:ro];
 h=[0:dh:2*pi];
@@ -48,44 +48,44 @@ for i = 1:length(h)
     plot([ri ro]*cos(h(i)),[ri ro]*sin(h(i)),'k');
 end
 
-% for i = 1:n
-%     [M,I] = min(q(i,:));
-%     if i <= n/2
-%         if M == 0
-%             plot([-2.5*a (I-c)*dx-0.5*dx], z(i+1)*ones(2,1),'k');
-%             plot([-(I-c)*dx+0.5*dx 2.5*a], z(i+1)*ones(2,1),'k');
-%         else
-%             plot([-2.5*a 2.5*a], z(i+1)*ones(2,1),'k');
-%         end
-%     else
-%         if M == 0
-%             plot([-2.5*a (I-c)*dx-0.5*dx], z(i)*ones(2,1),'k');
-%             plot([-(I-c)*dx+0.5*dx 2.5*a], z(i)*ones(2,1),'k');
-%         else
-%             plot([-2.5*a 2.5*a], z(i)*ones(2,1),'k');
-%         end
-%     end
-%     [M,I] = min(q(:,i));
-%     if i <= n/2
-%         if M == 0
-%             plot(z(i+1)*ones(2,1), [+2.5*a (c-I)*dy+0.5*dy],'k');
-%             plot(z(i+1)*ones(2,1), [-2.5*a -(c-I)*dy-0.5*dy],'k');
-%         else
-%             plot(z(i+1)*ones(2,1), [-2.5*a 2.5*a],'k');
-%         end 
-%     else
-%          if M == 0
-%             plot(z(i)*ones(2,1), [+2.5*a (c-I)*dy+0.5*dy],'k');
-%             plot(z(i)*ones(2,1), [-2.5*a -(c-I)*dy-0.5*dy],'k');
-%         else
-%             plot(z(i)*ones(2,1), [-2.5*a 2.5*a],'k');
-%         end 
-%     end 
-% end
-% plot([-2.5*a 2.5*a], -2.5*a*ones(2,1),'k');
-% plot([-2.5*a 2.5*a], 2.5*a*ones(2,1),'k');
-% plot(-2.5*a*ones(2,1), [-2.5*a 2.5*a],'k');
-% plot(2.5*a*ones(2,1), [-2.5*a 2.5*a],'k');
+for i = 1:n
+    [M,I] = min(q(i,:));
+    if i <= n/2
+        if M == 0
+            plot([-2.5*a (I-c)*dx-0.5*dx], z(i+1)*ones(2,1),'k');
+            plot([-(I-c)*dx+0.5*dx 2.5*a], z(i+1)*ones(2,1),'k');
+        else
+            plot([-2.5*a 2.5*a], z(i+1)*ones(2,1),'k');
+        end
+    else
+        if M == 0
+            plot([-2.5*a (I-c)*dx-0.5*dx], z(i)*ones(2,1),'k');
+            plot([-(I-c)*dx+0.5*dx 2.5*a], z(i)*ones(2,1),'k');
+        else
+            plot([-2.5*a 2.5*a], z(i)*ones(2,1),'k');
+        end
+    end
+    [M,I] = min(q(:,i));
+    if i <= n/2
+        if M == 0
+            plot(z(i+1)*ones(2,1), [+2.5*a (c-I)*dy+0.5*dy],'k');
+            plot(z(i+1)*ones(2,1), [-2.5*a -(c-I)*dy-0.5*dy],'k');
+        else
+            plot(z(i+1)*ones(2,1), [-2.5*a 2.5*a],'k');
+        end 
+    else
+         if M == 0
+            plot(z(i)*ones(2,1), [+2.5*a (c-I)*dy+0.5*dy],'k');
+            plot(z(i)*ones(2,1), [-2.5*a -(c-I)*dy-0.5*dy],'k');
+        else
+            plot(z(i)*ones(2,1), [-2.5*a 2.5*a],'k');
+        end 
+    end 
+end
+plot([-2.5*a 2.5*a], -2.5*a*ones(2,1),'k');
+plot([-2.5*a 2.5*a], 2.5*a*ones(2,1),'k');
+plot(-2.5*a*ones(2,1), [-2.5*a 2.5*a],'k');
+plot(2.5*a*ones(2,1), [-2.5*a 2.5*a],'k');
 
 hold off
 

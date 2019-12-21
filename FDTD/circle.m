@@ -1,8 +1,5 @@
 function circle(dx,dy,a,n) %n even
 global q qx qy
-q = ones(n,n);
-qx = ones(n,n+1);
-qy = ones(n+1,n);
 c = n/2+0.5;
 for i = 1:n
     for j = 1:n
