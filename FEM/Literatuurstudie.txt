@@ -1,3 +1,7 @@
+@Jasper: interessante paper?
+https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=406050
+
+
 Basiscursus met vanalles en nog wat (oa. Jacobiaan idee van gehaald, bary coord stelsel, gans hoofdstuk drie voor begrip (ihb 3.7 local, global, assembly), stukjes h9,...
 http://hplgit.github.io/INF5620/doc/pub/H14/fem/pdf/main_fem-4print.pdf
 
@@ -16,6 +20,8 @@ https://scicomp.stackexchange.com/questions/24846/imposing-boundary-conditions-f
 Spurious Eigenvalues (nevermind is blijkbaar enkel relevant in niet-spectrale problemen?)
 https://scicomp.stackexchange.com/questions/31140/dirichlet-boundary-conditions-in-generalized-eigenvalue-problem
 leads to: http://web.physics.ucsb.edu/~complex/pubs/siam_spurious.pdf en ik zie inderdaad kG=k*1 infinite eigenvalues
+
+Dit kan interessant zijn: hoe los je gen eig prob op http://fourier.eng.hmc.edu/e161/lectures/algebra/node7.html
 
 Wiskundige verantwoording:
 https://scicomp.stackexchange.com/questions/5072/how-to-properly-apply-non-homogeneous-dirichlet-boundary-conditions-with-fem/5073#5073
