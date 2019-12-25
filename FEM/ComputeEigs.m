@@ -1,14 +1,12 @@
-function ComputeEigsTE(meshSize, mode)
-    global N
-    N=meshSize; 
-    %N=220; 
-    %mode=2;    
-    clf; close all; addpath('./DistMesh'); %Je kunt nu ook scriptjes vinden in die grote folder voor meshes
-    
+function [Eigs_TM,Eigs_TE]=ComputeEigs(meshSize)
+    close all;
     %% Create and analyze mesh
+    global N; N=meshSize; 
+    %N=220; 
+    
     %create V and F
     meshType='cylinder';
-    z_max = 1; r_max = 1; d=1; percDist=d/z_max; eps_d=1;
+    z_max = 1; r_max = 1; d=0.5; percDist=d/z_max; eps_d=3;
     if meshType=='cylinder'
         Nz=N; Nr=Nz;
         global V; global F
@@ -19,7 +17,7 @@ function ComputeEigsTE(meshSize, mode)
         [V,F]=distmesh2d(inline('dfct(rz,@(rz) boundary(rz(:,1)))','rz'),@huniform,vertices_length,[0,0;z_max,r_max],coord_fix);
     end
     V=V.'; F=F.';
-    F(:,1:2:end)=F([1,3,2],1:2:end); %tang cont
+    F(:,1:2:end)=F([1,3,2],1:2:end); %tangential continuity
     
     %Create E
     i_index=[1,2,3,1,2,3,1,2,3]; j_index=[1,1,1,2,2,2,3,3,3]; I=F(i_index,:); J=F(j_index,:);
@@ -105,8 +103,8 @@ function ComputeEigsTE(meshSize, mode)
     g_edge=zeros(9,size(F,2));
     g_edge([1,5,9],:)=((b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+6*r(s(i+1),:)+2*r(s(i+2),:))-2*(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))+(b(s(i+1),:).^2+c(s(i+1),:).^2).*(2*r(s(i),:)+2*r(s(i+1),:)+6*r(s(i+2),:)))./(240*abs(A(i,:)));
     g_edge([2,6,3],:)=((b(s(i+2),:).*b(s(i),:)+c(s(i+2),:).*c(s(i),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))-(b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:))-(b(s(i+1),:).*b(s(i),:)+c(s(i+1),:).*c(s(i),:)).*(2*r(s(i),:)+2*r(s(i+1),:)+6*r(s(i+2),:))+(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(2*r(s(i),:)+r(s(i+1),:)+2*r(s(i+2),:)))./(240*abs(A(i,:)));    
-    g_edge(:,1:ceil(size(Fedge,2)*percDist))=eps_d*g_edge(:,1:ceil(size(Fedge,2)*percDist)); %different permittivities
     g_edge([4,7,8],:)=g_edge([2,3,6],:); %interaction integrals are symmetric in a triangle's edge indices
+    g_edge(:,1:ceil((N-1)*percDist)*(N-1)*2)=eps_d*g_edge(:,1:ceil((N-1)*percDist)*(N-1)*2); %different permittivities    
     G_edge=sparse(I_edge,J_edge,g_edge,length(E),length(E));
     
     m_node=zeros(9,size(F,2));
@@ -117,7 +115,7 @@ function ComputeEigsTE(meshSize, mode)
     g_node([1,5,9],:)=(3*r(s(i),:)+r(s(i+1),:)+r(s(i+2),:)).*abs(A(i,:))/30;
     g_node([2,6,3],:)=(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:)).*abs(A(i,:))/60;
     g_node([4,7,8],:)=g_node([2,3,6],:); %interaction integrals are symmetric in a triangle's edge indices
-    g_node(:,1:ceil(size(F,2)*percDist))=eps_d*g_node(:,1:ceil(size(F,2)*percDist)); %different permittivities
+    g_node(:,1:ceil((N-1)*percDist)*(N-1)*2)=eps_d*g_node(:,1:ceil((N-1)*percDist)*(N-1)*2); %different permittivities
     G_node=sparse(I,J,g_node,length(V),length(V));
     
     %BCs   
@@ -177,31 +175,31 @@ function ComputeEigsTE(meshSize, mode)
         M_node(E_mantle_node(n),E_mantle_node(n))=1;
     end
 
-    length(E)-size(F,2)+1 %eig gwn #nodes volgens euler
+    %length(E)-size(F,2)+1 %eig gwn #nodes volgens euler
     %svd(full(M_edge)) %sum(svd(full(M_edge))<eps('single') | abs(svd(full(M_edge))-1)<eps('single'))    
-    sum(svd(full(M_edge))<=1+eps('single')) %apparantly only this works. there's one sigma randomly between 0 and 1 which isn't an sqrt(eigenvalue)
+    %sum(svd(full(M_edge))<=1+eps('single')) %apparantly only this works. there's one sigma randomly between 0 and 1 which isn't an sqrt(eigenvalue)
     
-    if N < 5
+    if N < 7
         global TM_modes; [TM_modes,D_TM]=eig(full(M_edge),full(G_edge));
         global TE_modes; [TE_modes,D_TE]=eig(full(M_node),full(G_node));
     else
-        global TM_modes; [TM_modes,D_TM]=eigs(M_edge,G_edge,20,15); %let op dat je niet boven max aantal modes geraakt nu!
-        global TE_modes; [TE_modes,D_TE]=eigs(M_node,G_node,20,63.4);
+        global TM_modes; [TM_modes,D_TM]=eigs(M_edge,G_edge,40,74); %let op dat je niet boven max aantal modes geraakt nu!
+        global TE_modes; [TE_modes,D_TE]=eigs(M_node,G_node,40,138);
     end
     
     %sort the eigenvalues and associated eigenmodes from low to high 
-    [dnnz_TM,sortingIndices]=sort(D_TM(D_TM>eps('single'))); TM_modes=TM_modes(:,sortingIndices);
-    [dnnz_TE,sortingIndices]=sort(D_TE(D_TE>eps('single'))); TE_modes=TE_modes(:,sortingIndices);
+    [Eigs_TM,sortingIndices]=sort(D_TM(D_TM>eps('single') & D_TM ~= Inf)); TM_modes=TM_modes(:,sortingIndices);
+    [Eigs_TE,sortingIndices]=sort(D_TE(D_TE>eps('single') & D_TE ~= Inf)); TE_modes=TE_modes(:,sortingIndices);
     
-    disp(['TM resonant frequency: k^2=' num2str(dnnz_TM(mode))])
-    disp(['TE resonant frequency: k^2=' num2str(dnnz_TE(mode))])
+    %disp(['TM resonant frequency: k^2=' num2str(Eigs_TM(mode))])
+    %disp(['TE resonant frequency: k^2=' num2str(Eigs_TE(mode))])
     %TO DO: k is geen frequentie. Neem lucht als dielectric!
     
     %%{
     if meshType == 'cylinder'
         if (Nz+Nr)/2 < 61
             res=1/(N-1)/6; %roughly 6 per triangle length. Increasing res betters low N visualization but not eigenvalues
-            %res=0.02; %best to pick a round number since the edges and nodes are located on "round" places
+            mode=2;
             viewElectricField(mode, res, z_max, r_max)
             %viewMeshandBasisFcts(1, 1, res,z_max,r_max)
             %viewMeshandBasisFcts(1, 2, res,z_max,r_max)
