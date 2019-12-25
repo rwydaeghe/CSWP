@@ -6,7 +6,7 @@ c=340; %speed of sound
 Z=c; %surface impedance for non-reflecting boundary
 a=1; %radius of circle
 
-dx=0.1; %spatial discretisation step
+dx=0.05; %spatial discretisation step
 dy=dx;
 nx=round(6*a/dx); %nx numbers of cells in x direction for total field, chosen to be even and large enough to make comparison to analytic solution
 if mod(nx,2)==1
@@ -15,7 +15,7 @@ end
 ny=nx; %ny chosen equal to nx
 
 dr=dx; %spatial discretisation step in r direction in polar grid (dr = dx, cells need to have approx the same size)
-nr=6; %number of cells in r direction (only 4)
+nr=20; %number of cells in r direction (only 4)
 roff=a; %inner edge polar grid (starts at the edge of the circle)
 ro=roff+nr*dr; %outer edge polar grid
 dh=dr/roff; %spatial discretisation step in theta direction
@@ -29,6 +29,9 @@ n=nx+2*nsf+2*npml; %total number of cells in x or y direction
 CFL=1; %Courant number
 dt=CFL/(c*sqrt((1/dx^2)+(1/dy^2))); %time step
 nt=400/CFL; %number of time steps
+
+R=[roff+dr/2:dr:ro-dr/2];
+T=[dh/2:dh:2*pi-dh/2]*180/pi;
 
 %% Set px py ox oy matrices
 
@@ -106,7 +109,10 @@ for it = 1:nt
     %    mov(it) = getframe;
     
     %% Interpolate for boundary conditions on rectangular grid
-    interpolouteredgerectanglegrid(nr,nh,n,dx,dy,dh,dr,ro)
+    %interpolouteredgerectanglegrid(nr,nh,n,dx,dy,dh,dr,ro)
+    
+    %% Interpolate for boundary conditions on polar grid (outer edge)
+     interpolouteredgecircle(nr,nh,ro,dr,dh,n,dx,dy)
     
 
     %% Update total p fields rectangular grid
@@ -150,16 +156,15 @@ for it = 1:nt
      oy = oy.*qy;
      px = px.*q;
      py = py.*q;
-     %% Interpolate for boundary conditions on polar grid (outer edge)
-     interpolouteredgecircle(nr,nh,ro,dr,dh,n,dx,dy)
+     
      
      %% FDTD on polar grid
      newstep(nr,nh,c,dr,dh,dt,roff)
      
     %% Presenting the p field
-    
-    pcolor(px+py);view(0,90);axis equal;shading interp;caxis([-340*A 340*A]);title([num2str(it) '/' num2str(nt)]);hold on;
-    xlim([1 n+1]);ylim([1 n+1]);
+    polarPcolor(R,T,p); shading interp; caxis([-0.02*A 0.02*A]); title([num2str(it) '/' num2str(nt)]);
+    %pcolor(px+py);view(0,90);axis equal;shading interp;caxis([-340*A 340*A]);title([num2str(it) '/' num2str(nt)]);hold on;
+    %xlim([1 n+1]);ylim([1 n+1]);
     mov(it) = getframe; %if this line is removed simulation runs much faster
     
     
