@@ -16,10 +16,12 @@ for i=1:Nh
     t = i*dh-dh/2;
     x = ro*cos(t);
     y = ro*sin(t);
-    [wx,wxi] = min(abs(Mx-x));
-    [wy,wyi] = min(abs(My-y));
-    wx = wx+x;
-    wy = wy+y;
+    Mxx = Mx-x;
+    Myy = My-y;
+    [wx,wxi] = min(abs(Mxx));
+    [wy,wyi] = min(abs(Myy));
+    wx = Mxx(wxi)+x;
+    wy = Myy(wyi)+y;
     if x > wx
         x1 = wx;
         x2 = wx+dx;

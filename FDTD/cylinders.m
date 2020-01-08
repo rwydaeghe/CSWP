@@ -1,14 +1,14 @@
 %% Set paramaters
 
 A=1; %amplitude plane wave
-k=5; %wave number plane wave
+k=1; %wave number plane wave
 c=340; %speed of sound
 Z=c; %surface impedance for non-reflecting boundary
 a=1; %radius of circle
 
 dx=0.1; %spatial discretisation step
 dy=dx;
-nx=round(6*a/dx); %nx numbers of cells in x direction for total field, chosen to be even and large enough to make comparison to analytic solution
+nx=round(17*a/dx); %nx numbers of cells in x direction for total field, chosen to be even and large enough to make comparison to analytic solution
 if mod(nx,2)==1
     nx = nx+1;
 end
@@ -19,7 +19,7 @@ nr=4; %number of cells in r direction (only 4)
 roff=a; %inner edge polar grid (starts at the edge of the circle)
 ro=roff+nr*dr; %outer edge polar grid
 dh=dr/roff; %spatial discretisation step in theta direction
-nh=2*round(pi/dh); %number of cells in theta direction
+nh=round(2*pi/dh); %number of cells in theta direction
 dh=2*pi/nh; %dh recalculated so the whole 0..2pi interval is covered
 
 npml=30; %number of cells pml
@@ -33,34 +33,43 @@ nt=200/CFL; %number of time steps
 R=[roff+dr/2:dr:ro-dr/2];
 T=[dh/2:dh:2*pi-dh/2]*180/pi;
 
-%% Set control points
+%center of circles
+x1 = -9/2*a;
+y1 = +9/2*a;
+x2 = -3/2*a;
+y2 = +9/2*a;
+x3 = +3/2*a;
+y3 = +9/2*a;
+x4 = +9/2*a;
+y4 = +9/2*a;
 
-x_bron=round(n/2); y_bron=round(n/2);
+x5 = -9/2*a;
+y5 = +3/2*a;
+x6 = -3/2*a;
+y6 = +3/2*a;
+x7 = +3/2*a;
+y7 = +3/2*a;
+x8 = +9/2*a;
+y8 = +3/2*a;
 
-x_recorder=x_bron; y_recorder=y_bron+round(2*a/dx); %plaats recorder 1 - location receiver 1
-x_ref=x_bron;y_ref=y_bron+round(2.5*a/dx); %plaats referentie 1 - location reference receiver 1
+x9 = -9/2*a;
+y9 = -3/2*a;
+x10 = -3/2*a;
+y10 = -3/2*a;
+x11 = +3/2*a;
+y11 = -3/2*a;
+x12 = +9/2*a;
+y12 = -3/2*a;
 
-x_recorder2=x_bron; y_recorder2=y_bron-round(2*a/dx); %plaats recorder 2 - location receiver 2
-x_ref2=x_bron;y_ref2=y_bron-round(2.5*a/dx); %plaats referentie 2 - location reference receiver 2
+x13 = -9/2*a;
+y13 = -9/2*a;
+x14 = -3/2*a;
+y14 = -9/2*a;
+x15 = +3/2*a;
+y15 = -9/2*a;
+x16 = +9/2*a;
+y16 = -9/2*a;
 
-x_recorder3=x_bron-round(2*a/dx); y_recorder3=y_bron; %plaats recorder 3 - location receiver 3
-x_ref3=x_bron-round(2.5*a/dx);y_ref3=y_bron; %plaats referentie 3 - location reference receiver 3
-
-x_recorder4=x_bron+round(2*a/dx); y_recorder4=y_bron; %plaats recorder 3 - location receiver 3
-x_ref4=x_bron+round(2.5*a/dx);y_ref4=y_bron; %plaats referentie 3 - location reference receiver 3
-
-
-recorder = zeros(nt,1);
-recorder_ref = zeros(nt,1);
-
-recorder2 = zeros(nt,1);
-recorder2_ref = zeros(nt,1);
-
-recorder3 = zeros(nt,1);
-recorder3_ref = zeros(nt,1);
-
-recorder4 = zeros(nt,1);
-recorder4_ref = zeros(nt,1);
 %% Set px py ox oy matrices
 
 global ox oy px py 
@@ -69,9 +78,54 @@ ox = zeros(n, n+1); oy = zeros(n+1, n); px = zeros(n, n); py = zeros(n, n);
 
 %% Set p or oh matrices
 
-global p or oh 
-or = zeros(nr+1, nh); oh = zeros(nr, nh); p = zeros(nr, nh);
-%first index y direction, second index x direction
+global p1 or1 oh1 
+or1 = zeros(nr+1, nh); oh1 = zeros(nr, nh); p1 = zeros(nr, nh);
+%first index r direction, second index theta direction
+
+global p2 or2 oh2 
+or2 = zeros(nr+1, nh); oh2 = zeros(nr, nh); p2 = zeros(nr, nh);
+
+global p3 or3 oh3 
+or3 = zeros(nr+1, nh); oh3 = zeros(nr, nh); p3 = zeros(nr, nh);
+
+global p4 or4 oh4 
+or4 = zeros(nr+1, nh); oh4 = zeros(nr, nh); p4 = zeros(nr, nh);
+
+global p5 or5 oh5 
+or5 = zeros(nr+1, nh); oh5 = zeros(nr, nh); p5 = zeros(nr, nh);
+
+global p6 or6 oh6 
+or6 = zeros(nr+1, nh); oh6 = zeros(nr, nh); p6 = zeros(nr, nh);
+
+global p7 or7 oh7 
+or7 = zeros(nr+1, nh); oh7 = zeros(nr, nh); p7 = zeros(nr, nh);
+
+global p8 or8 oh8 
+or8 = zeros(nr+1, nh); oh8 = zeros(nr, nh); p8 = zeros(nr, nh);
+
+global p9 or9 oh9 
+or9 = zeros(nr+1, nh); oh9 = zeros(nr, nh); p9 = zeros(nr, nh);
+
+global p10 or10 oh10 
+or10 = zeros(nr+1, nh); oh10 = zeros(nr, nh); p10 = zeros(nr, nh);
+
+global p11 or11 oh11 
+or11 = zeros(nr+1, nh); oh11 = zeros(nr, nh); p11 = zeros(nr, nh);
+
+global p12 or12 oh12 
+or12 = zeros(nr+1, nh); oh12 = zeros(nr, nh); p12 = zeros(nr, nh);
+
+global p13 or13 oh13 
+or13 = zeros(nr+1, nh); oh13 = zeros(nr, nh); p13 = zeros(nr, nh);
+
+global p14 or14 oh14 
+or14 = zeros(nr+1, nh); oh14 = zeros(nr, nh); p14 = zeros(nr, nh);
+
+global p15 or15 oh15 
+or15 = zeros(nr+1, nh); oh15 = zeros(nr, nh); p15 = zeros(nr, nh);
+
+global p16 or16 oh16 
+or16 = zeros(nr+1, nh); oh16 = zeros(nr, nh); p16 = zeros(nr, nh);
 
 %% Set reference array induced ox and px (plane wave coming from the left side)
 
@@ -138,7 +192,7 @@ for it = 1:nt
     %     plot(1:dx:1+nx*dx,oxref)
     %    mov(it) = getframe;
     %% Interpolate for boundary conditions on rectangular grid
-    interpolouteredgerectanglegrid(nr,nh,n,dx,dy,dh,dr,roff)
+    %interpolouteredgerectanglegrid(nr,nh,n,dx,dy,dh,dr,roff)
    
     %% Interpolate for boundary conditions on polar grid (outer edge)
      interpolouteredgecircle(nr,nh,ro,dr,dh,n,dx,dy)
@@ -147,7 +201,7 @@ for it = 1:nt
     %% Update total p fields rectangular grid
 
     px = ((1-kpx*dt/2).*px - c^2*dt/dx*(ox(:,2:n+1)-ox(:,1:n)))./(1+kpx*dt/2);
-    py = ((1-kpy*dt/2).*py - c^2*dt/dy*(oy(1:n,:)-oy(2:n+1,:)))./(1+kpy*dt/2);
+    py = ((1-kpy*dt/2).*py - c^2*dt/dy*(oy(2:n+1,:)-oy(1:n,:)))./(1+kpy*dt/2);
     
     %% Update tf/sf boundary for px (no py component incident field) (px lies in scattered field region)
 
@@ -157,22 +211,22 @@ for it = 1:nt
     
     %% Update total o fields rectangular grid
     
-        ox(1:n,2:n) = ((1-kox(1:n,2:n)*dt/2).*ox(1:n,2:n) - dt/dx*(px(1:n,2:n)+py(1:n,2:n)-px(1:n,1:n-1)-py(1:n,1:n-1)))./(1+kox(1:n,2:n)*dt/2);
+    ox(1:n,2:n) = ((1-kox(1:n,2:n)*dt/2).*ox(1:n,2:n) - dt/dx*(px(1:n,2:n)+py(1:n,2:n)-px(1:n,1:n-1)-py(1:n,1:n-1)))./(1+kox(1:n,2:n)*dt/2);
     ox(1:n,1) = 1/(1+Z*dt/dx)*((1-Z*dt/dx)*ox(1:n,1)-2*dt/dx*(px(1:n,1)+py(1:n,1)));
     ox(1:n,n+1) = 1/(1+Z*dt/dx)*((1-Z*dt/dx)*ox(1:n,n+1)+2*dt/dx*(px(1:n,n)+py(1:n,n)));
     
-    oy(2:n,1:n) = ((1-koy(2:n,1:n)*dt/2).*oy(2:n,1:n) - dt/dy*(px(1:n-1,1:n)+py(1:n-1,1:n)-px(2:n,1:n)-py(2:n,1:n)))./(1+koy(2:n,1:n)*dt/2);
-      oy(1,1:n) = 1/(1+Z*dt/dy)*((1-Z*dt/dy)*oy(1,1:n)-2*dt/dy*(px(1,1:n)+py(1,1:n)));
-      oy(n+1,1:n) = 1/(1+Z*dt/dy)*((1-Z*dt/dy)*oy(n+1,1:n)+2*dt/dy*(px(n,1:n)+py(n,1:n)));
-%  
+     oy(2:n,1:n) = ((1-koy(2:n,1:n)*dt/2).*oy(2:n,1:n) - dt/dy*(px(2:n,1:n)+py(2:n,1:n)-px(1:n-1,1:n)-py(1:n-1,1:n)))./(1+koy(2:n,1:n)*dt/2);
+     oy(1,1:n) = 1/(1+Z*dt/dy)*((1-Z*dt/dy)*oy(1,1:n)-2*dt/dy*(px(1,1:n)+py(1,1:n)));
+     oy(n+1,1:n) = 1/(1+Z*dt/dy)*((1-Z*dt/dy)*oy(n+1,1:n)+2*dt/dy*(px(n,1:n)+py(n,1:n)));
+     
     
     %% Update tf/sf boundary for ox and oy (both in total field)
     
     ox(npml+nsf+1:n-npml-nsf,npml+nsf+1) = ox(npml+nsf+1:n-npml-nsf,npml+nsf+1) - dt/dx*(-pxref(1,1)); %add (+) incident field to the left (-)
     ox(npml+nsf+1:n-npml-nsf,n-npml-nsf+1) = ox(npml+nsf+1:n-npml-nsf,n-npml-nsf+1) - dt/dx*(+pxref(1,nx)); %add (+) incident field to the right (+)
     
-    oy(npml+nsf+1,npml+nsf+1:n-npml-nsf) = oy(npml+nsf+1,npml+nsf+1:n-npml-nsf) - dt/dy*(+pxref(1,:)); %add (+) incident field above (+)
-    oy(n-npml-nsf+1,npml+nsf+1:n-npml-nsf) = oy(n-npml-nsf+1,npml+nsf+1:n-npml-nsf) - dt/dy*(-pxref(1,:)); %add (+) incident field below (-)
+    oy(npml+nsf+1,npml+nsf+1:n-npml-nsf) = oy(npml+nsf+1,npml+nsf+1:n-npml-nsf) - dt/dy*(-pxref(1,:)); %add (+) incident field below (-)
+    oy(n-npml-nsf+1,npml+nsf+1:n-npml-nsf) = oy(n-npml-nsf+1,npml+nsf+1:n-npml-nsf) - dt/dy*(pxref(1,:)); %add (+) incident field above (+)
     
     %% Ensure boundary cylinder
     
@@ -207,22 +261,10 @@ for it = 1:nt
     %polarPcolor(R,T,p); shading interp; caxis([-340*A 340*A]); title([num2str(it) '/' num2str(nt)]);
     pcolor(px+py);view(0,90);axis equal;shading interp;caxis([-340*A 340*A]);title([num2str(it) '/' num2str(nt)]);hold on;
     xlim([1 n+1]);ylim([1 n+1]);
-    mov(it) = getframe; %if this line is removed simulation runs much faster
+    %mov(it) = getframe; %if this line is removed simulation runs much faster
     
     
 end
-
-pcolor(px+py);view(0,90);axis equal;shading interp;caxis([-340*A 340*A]);title([num2str(it) '/' num2str(nt)]);hold on;
-xlim([1 n+1]);ylim([1 n+1]);
-
-% n_of_samples=8192;
-% 
-% post_Afout_Pfout(a,dx,dy,c,dt,x_ref,x_recorder,y_ref,y_recorder,x_bron,y_bron,recorder(100:200,1),recorder_ref(100:200,1),n_of_samples,tijdreeks(100:200,1),k)
-%  post_Afout_Pfout(a,dx,dy,c,dt,x_ref2,x_recorder2,y_ref2,y_recorder2,x_bron,y_bron,recorder2(100:200,1),recorder2_ref(100:200,1),n_of_samples,tijdreeks(100:200,1),k)
-%  post_Afout_Pfout(a,dx,dy,c,dt,x_ref3,x_recorder3,y_ref3,y_recorder3,x_bron,y_bron,recorder3(100:200,1),recorder3_ref(100:200,1),n_of_samples,tijdreeks(100:200,1),k)
-%  post_Afout_Pfout(a,dx,dy,c,dt,x_ref4,x_recorder4,y_ref4,y_recorder4,x_bron,y_bron,recorder4(100:200,1),recorder4_ref(100:200,1),n_of_samples,tijdreeks(100:200,1),k)
-%  
-
-
+    
 
 

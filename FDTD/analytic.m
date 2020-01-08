@@ -2,10 +2,13 @@ function s = analytic(E0,a,k,n,r,phi)
     c=340;
     s=0;
     for i = 0:n
+        i
         v=2;
         if i == 0
             v=1;
         end
-        s = s + E0*v*(-1i)^(i)*(besselj(i,k*r)-besselj(i,k*a)/besselh(i,2,k*a)*besselh(i,2,k*r))*cos(n*phi);
+         a1 = (besselj(i, k*a)*i)/k/a - besselj(1 + i, k*a);
+         a2 = (besselh(i, 1, k*a)*i)/k/a - besselh(1 + i, 1, k*a);
+        s = s + E0*v*(1i)^(i)*(1*besselj(i,k*r)-0*a1/a2*besselh(i,1,k*r))*cos(i*(phi));
     end
 end

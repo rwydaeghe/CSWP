@@ -119,7 +119,7 @@ end
 n_of_samples=8192;
 
 post_Afout_Pfout(a,dx,dy,c,dt,x_ref,x_recorder,y_ref,y_recorder,x_bron,y_bron,recorder,recorder_ref,n_of_samples,tijdreeks,k)
-% post_Afout_Pfout(a,dx,dy,c,dt,x_ref2,x_recorder2,y_ref2,y_recorder2,x_bron,y_bron,recorder2,recorder2_ref,n_of_samples,tijdreeks,k)
-% post_Afout_Pfout(a,dx,dy,c,dt,x_ref3,x_recorder3,y_ref3,y_recorder3,x_bron,y_bron,recorder3,recorder3_ref,n_of_samples,tijdreeks,k)
-% post_Afout_Pfout(a,dx,dy,c,dt,x_ref4,x_recorder4,y_ref4,y_recorder4,x_bron,y_bron,recorder4,recorder4_ref,n_of_samples,tijdreeks,k)
+post_Afout_Pfout(a,dx,dy,c,dt,x_ref2,x_recorder2,y_ref2,y_recorder2,x_bron,y_bron,recorder2,recorder2_ref,n_of_samples,tijdreeks,k)
+post_Afout_Pfout(a,dx,dy,c,dt,x_ref3,x_recorder3,y_ref3,y_recorder3,x_bron,y_bron,recorder3,recorder3_ref,n_of_samples,tijdreeks,k)
+post_Afout_Pfout(a,dx,dy,c,dt,x_ref4,x_recorder4,y_ref4,y_recorder4,x_bron,y_bron,recorder4,recorder4_ref,n_of_samples,tijdreeks,k)
 toc
