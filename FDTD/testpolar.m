@@ -44,7 +44,7 @@ for it=1:nt
    
    p(50,10) = p(100,10)+bron; %druk toevoegen bij de drukvergelijking op bronlocatie - adding source term to propagation
     %ot = zeros(Nr,Nh);
-   newstep(Nr,Nh,c,dr,dh,dt,bron,roff);   %propagatie over 1 tijdstap - propagate over one time step
+   newstep(Nr,Nh,c,dr,dh,dt,roff);   %propagatie over 1 tijdstap - propagate over one time step
     %ot = zeros(Nr,Nh);
 
 %   p(isnan(p))=0;

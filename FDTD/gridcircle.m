@@ -1,10 +1,11 @@
-dx=0.2;
+dx=0.1;
 dy=dx;
-a=2;
+a=1;
 ri=a;
 ro=ri+4*dx;
 dh=dx/ri;
-dh=2*pi/round(2*pi/dh);
+nh=2*round(pi/dh)
+dh=2*pi/nh;
 r=[ri:dx:ro];
 h=[0:dh:2*pi];
 f=[0:0.001:2*pi];
@@ -16,20 +17,8 @@ for i = 1:n
         for j = 1:n
             x = (i-c)*dx;
             y = (c-j)*dy;
-            if x^2+y^2 < ri^2
+            if x^2+y^2 < (ri+1.25*dx)^2
                 q(j,i)=0;
-            elseif x==0
-                l=min([y-ri y-(-ri)]);
-                if l <= 1.25*dx
-                    q(j,i)=0;
-                end
-            else
-                xi=sqrt(ri^2/(1+(y/x)^2));
-                yi=y/x*xi;
-                l=min([sqrt((y-yi)^2+(x-xi)^2) sqrt((y+yi)^2+(x+xi)^2)]);
-                if l <= 1.25*dx
-                    q(j,i)=0;
-                end
             end
                 
         end
