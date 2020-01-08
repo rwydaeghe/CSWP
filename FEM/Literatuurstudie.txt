@@ -48,3 +48,15 @@ http://people.duke.edu/~qhliu/ee271/chap8.pdf (beter):
 		-andere twee edges op axis moeten nul zijn (TO DO)
 	-e_m=0 in TE op axis
 
+
+Errors:
+The error in the FEM solution is NOT, I REPEAT NOT, the error at the
+degrees of freedom! A common mistake is to assume the error in the solution
+is simply the norm of the errors at each degree of freedom. However, FEM is a
+numerical method that attempts to preserve the integral of the PDE over the
+problem domain. Therefore the error in the FEM solution is the error in the
+integral over each finite element. To compute the error over each finite element,
+project the solution at the degrees of freedom over each element using the left
+and right linear shape functions. Then integrate the projection over the element
+using Gauss quadrature. You can then take the norm (e.g., Euclidean) over all
+the element errors.

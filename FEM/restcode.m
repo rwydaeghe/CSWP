@@ -148,3 +148,18 @@ end
 %poging tot vectorizeren van buitenste for loop als je Ez,Er,Ephi
 %berekent... heeft geen nut gehad want kost met for loop is toch al
 %O(n*1/n)
+
+%omslachtiger perpAxisEdge berekenen
+        %{
+        assocAxisEdge=[]; %all three edges associated with the triangle that contains the E_axis_edge 
+        for actualAxisEdge=E_axis_edge.'
+            assocAxisEdge=[assocAxisEdge;Fedge(:,find(sum(sparse(bsxfun(@eq,Fedge,actualAxisEdge)),1),2))]
+        end
+        perpAxisEdge=[];
+        for assocEdge=assocAxisEdge.'
+            assocEdgeVec=round((V(:,imag(E(assocEdge)))-V(:,real(E(assocEdge))))*(N-1));
+            if assocEdgeVec(2)==1 
+                perpAxisEdge=[perpAxisEdge;assocEdge];
+            end
+        end
+        %}

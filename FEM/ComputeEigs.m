@@ -1,14 +1,12 @@
-function ComputeEigsTE(meshSize, mode)
-    global N
-    N=meshSize; 
-    %N=50; 
-    %mode=2;    
-    clf; close all; addpath('./DistMesh'); %Je kunt nu ook scriptjes vinden in die grote folder voor meshes
-    
+function [Eigs_TM,Eigs_TE]=ComputeEigs(meshSize)
+    close all;
     %% Create and analyze mesh
+    global N; N=meshSize; 
+    %N=220; 
+    
     %create V and F
     meshType='cylinder';
-    z_max = 1; r_max = 1;    
+    z_max = 1; r_max = 1; d=0.5; percDist=d/z_max; eps_d=3;
     if meshType=='cylinder'
         Nz=N; Nr=Nz;
         global V; global F
@@ -19,10 +17,10 @@ function ComputeEigsTE(meshSize, mode)
         [V,F]=distmesh2d(inline('dfct(rz,@(rz) boundary(rz(:,1)))','rz'),@huniform,vertices_length,[0,0;z_max,r_max],coord_fix);
     end
     V=V.'; F=F.';
-    F(:,1:2:end)=F([1,3,2],1:2:end); %tang cont
+    F(:,1:2:end)=F([1,3,2],1:2:end); %tangential continuity
     
     %Create E
-    i_index=[1,2,3,1,2,3,1,2,3];j_index=[1,1,1,2,2,2,3,3,3]; I=F(i_index,:); J=F(j_index,:);
+    i_index=[1,2,3,1,2,3,1,2,3]; j_index=[1,1,1,2,2,2,3,3,3]; I=F(i_index,:); J=F(j_index,:);
     e=zeros(9,size(F,2)); e([2,3,6],:)=1;
     ECN=sparse(I,J,e,length(V),length(V)); %Edge Count on Node
     E_boundary=find2D(triu(ECN+ECN.')==1); global E; E=find2D(triu(ECN+ECN.')); %note that E's edges don't have correct "directions Re->Im" but not very important
@@ -35,48 +33,26 @@ function ComputeEigsTE(meshSize, mode)
     Fedge([1,2,3],2:2:end)=Fedge([3,1,2],2:2:end); %reshape(E(Fedge(:)),3,[])==F(2,:)+j*F(3,:) %(onschuldige) even permutatie zodat Fedge(1,:)<->F(1,:) en bewijs hiervoor  
     
     %Find boundary edges
-    if meshType == 'cylinder'
-        %Maar O(N^2) want slechts boundary. 3rde grootste bottleneck na Fedge en eigs
-        %TM
-        E_vec=round((V(:,imag(E_boundary))-V(:,real(E_boundary)))*(N-1)); %normalized to be logical array. round for floating point error
-        E_hori=E_boundary(E_vec(1,:)==1); E_vert=E_boundary(E_vec(2,:)==1);
-        E_axis=E_hori(V(2,real(E_hori))==0); E_mantle=E_hori(V(2,real(E_hori))==1); E_leftBound=E_vert(V(1,real(E_vert))==0); E_rightBound=E_vert(V(1,real(E_vert))==1);
-        %E_boundary=[E_leftBound,E_rightBound,E_axis,E_mantle];
-        %E_boundary_edge=reshape(full(sum(sparse(bsxfun(@eq,E_boundary(:),E.').*[1:length(E)]),2)),[],4);
-        E_axis_edge=full(sum(sparse(bsxfun(@eq,E_axis(:),E.').*[1:length(E)]),2));
-        E_mantle_edge=full(sum(sparse(bsxfun(@eq,E_mantle(:),E.').*[1:length(E)]),2));
-        assocAxisEdge=[];
-        for actualAxisEdge=E_axis_edge.'
-            assocAxisEdge=[assocAxisEdge;Fedge(:,find(sum(sparse(bsxfun(@eq,Fedge,actualAxisEdge)),1),2))];
-        end
-        perpAxisEdge=[];
-        for assocEdge=assocAxisEdge.'
-            assocEdgeVec=round((V(:,imag(E(assocEdge)))-V(:,real(E(assocEdge))))*(N-1));
-            if assocEdgeVec(2)==1
-                perpAxisEdge=[perpAxisEdge;assocEdge];
+    %TM
+    E_vec=round((V(:,imag(E_boundary))-V(:,real(E_boundary)))*(N-1)); %normalized to be logical array. round for floating point error
+    E_hori=E_boundary(E_vec(1,:)==1); E_vert=E_boundary(E_vec(2,:)==1);
+    E_leftBound=E_vert(V(1,real(E_vert))==0); E_rightBound=E_vert(V(1,real(E_vert))==1); E_axis=E_hori(V(2,real(E_hori))==0); E_mantle=E_hori(V(2,real(E_hori))==1); 
+    E_boundary_edge=reshape(full(sum(sparse(bsxfun(@eq,reshape([E_leftBound,E_rightBound,E_axis,E_mantle],[],1),E.').*[1:length(E)]),2)),[],4);
+    E_leftBound_edge=E_boundary_edge(:,1); E_rightBound_edge=E_boundary_edge(:,2); E_axis_edge=E_boundary_edge(:,3); E_mantle_edge=E_boundary_edge(:,4);
+
+    %really we want to set the BC on the perpendicular axis edges
+    perpAxisEdge=[];
+    for actualAxisEdge=E_axis_edge.' %only O(3*N)
+        for Fedge_axis=reshape(Fedge(:,find(sum(sparse(bsxfun(@eq,Fedge,actualAxisEdge)),1),2)),1,[])
+            if round((V(2,imag(E(Fedge_axis)))-V(2,real(E(Fedge_axis))))*(N-1))==1
+                perpAxisEdge=[perpAxisEdge;Fedge_axis];
             end
         end
-        E_axis_edge=perpAxisEdge;
-        %E_axis_edge=assocAxisEdge;
-        %E_axis_edge=assocAxisEdge(find(~sum(sparse(bsxfun(@eq,assocAxisEdge.',E_axis_edge)),1)));        
-        
-        %TE
-        E_leftBound_node=find(sparse(bsxfun(@eq,V(1,:),0))).';
-        E_rightBound_node=find(sparse(bsxfun(@eq,V(1,:),1))).';
-        E_axis_node=find(sparse(bsxfun(@eq,V(2,:),0))).';
-        E_mantle_node=find(sparse(bsxfun(@eq,V(2,:),1))).';
     end
-    
-    %RVWn?
-    % neumann is altijd goed (kijk heel goed naar interpretatie d/dz e_z
-    % met alle drie w_edges en dan op figuur kijken naar pijltjes steeds
-    % zelfde z comp, of bewijs wiskundig). Axis is problematisch want daar moet
-    % e_r=0 in TM op edges en het beste dat ik kan doen e_z=0 door
-    % horizontale edge =0 te doen. Anders kun je zeggen dat het per default al ok is?
-    % Dirichlet mantel is te doen door horizontale weg te doen en dan hebt ge e_z=0 zou gewild    
-    
-    %IDEE: aangezien Er ~ diff(Ez,r) zou je gewoon een neumann RVW kunnen
-    %opleggen voor Ez en de boel is opgelost
+    E_axis_edge=perpAxisEdge;
+
+    %TE
+    E_leftBound_node=find(sparse(bsxfun(@eq,V(1,:),0))).'; E_rightBound_node=find(sparse(bsxfun(@eq,V(1,:),1))).'; E_axis_node=find(sparse(bsxfun(@eq,V(2,:),0))).'; E_mantle_node=find(sparse(bsxfun(@eq,V(2,:),1))).';
     %% Additional variables. 
     %Pre-allocate to increase performance
     z=[V(1,F(1,:));V(1,F(2,:));V(1,F(3,:))]; r=[V(2,F(1,:));V(2,F(2,:));V(2,F(3,:))];
@@ -96,119 +72,137 @@ function ComputeEigsTE(meshSize, mode)
     
     w_nodes_total=@(z,r,i,n) w_nodes(z,r,1,n)+w_nodes(z,r,2,n)+w_nodes(z,r,3,n);
     w_edges_z_total=@(z,r,i,n) w_edges_z(z,r,1,n)+w_edges_z(z,r,2,n)+w_edges_z(z,r,3,n);
-    w_edges_r_total=@(z,r,i,n) w_edges_r(z,r,1,n)+w_edges_r(z,r,2,n)+w_edges_r(z,r,3,n);
+    w_edges_r_total=@(z,r,i,n) w_edges_r(z,r,1,n)+w_edges_r(z,r,2,n)+w_edges_r(z,r,3,n);    
+    
+    GQ_N=20;
+    [W,X]=GaussLegendreQuadrature01(GQ_N);
+    GQI=zeros(9,size(F,2));
+    for i=1:GQ_N
+        for j=1:GQ_N
+            l=zeros(3,1); l(1)=X(i); l(2)=(1-X(i))*X(j); l(3)=1-l(1)-l(2);
+            GQI=GQI+(1-X(i))*W(i)*W(j).*l(i_index).*l(j_index)./(r(1,:).*l(1)+r(2,:).*l(2)+r(3,:).*l(3));
+        end
+    end
+    i=[1,2,3];
+    GQI=2*abs(A(1,:)).*GQI;
+    %Belangrijke TO DO in verslag: 
+    %1) Bespreek trage convergentie bij r_cart=0
+    %2) Jacobiaan moet altijd abs(A) zijn!
+    
+    %The vectorized code for this, although correct, sadly seems to be much
+    %slower, even for large N. This is probably due to large memory usage:
+    %l=zeros(N,N,1,3); l(:,:,1,1)=repmat(X,1,N); l(:,:,1,2)=(ones(N,1)-X).*X.'; l(:,:,1,3)=ones(N,N)-l(:,:,1,1)-l(:,:,1,2); l=repmat(l,1,1,size(F,2),1);
+    %GQI=permute(2*permute(abs(A(1,:)),[4,3,2,1]).*sum(sum(repmat(ones(N,1)-X,1,N,size(F,2)).*repmat(W.*W.',1,1,size(F,2)).*l(:,:,:,i_index).*l(:,:,:,j_index)./sum(repmat(permute(r,[4,3,2,1]),N,N).*l,4),2),1),[1,2,4,3])
     %% Build matrices and find eigenvalues
     I_edge=Fedge(i_index,:); J_edge=Fedge(j_index,:);
     
     m_edge=zeros(9,size(F,2));
-    m_edge(1:9,:)=ones(9,1).*(r(1,:)+r(2,:)+r(3,:))./(2*abs(A(1,:)));%let op eigenlijk is A in absolute waarde. Je kunt dat ook nagaan uit symmetrieredenen LL
+    m_edge(1:9,:)=ones(9,1).*(r(1,:)+r(2,:)+r(3,:))./(3*abs(A(1,:))); %let op eigenlijk is A in absolute waarde. Je kunt dat ook nagaan uit symmetrieredenen LL
     M_edge=sparse(I_edge,J_edge,m_edge,length(E),length(E));
 
     g_edge=zeros(9,size(F,2));
     g_edge([1,5,9],:)=((b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+6*r(s(i+1),:)+2*r(s(i+2),:))-2*(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))+(b(s(i+1),:).^2+c(s(i+1),:).^2).*(2*r(s(i),:)+2*r(s(i+1),:)+6*r(s(i+2),:)))./(240*abs(A(i,:)));
-    g_edge([2,6,3],:)=((b(s(i+2),:).*b(s(i),:)+c(s(i+2),:).*c(s(i),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))-(b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:))-(b(s(i+1),:).*b(s(i),:)+c(s(i+1),:).*c(s(i),:)).*(2*r(s(i),:)+2*r(s(i+1),:)+6*r(s(i+2),:))+(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(2*r(s(i),:)+r(s(i+1),:)+2*r(s(i+2),:)))./(240*abs(A(i,:)));
-    %equiv tangential cont: switch in 2<->3 and 5<->9 for tangential continuity every other triangle
-    %g_edge([2,3,5,9],2:2:end)=g_edge([3,2,9,5],2:2:end);
+    g_edge([2,6,3],:)=((b(s(i+2),:).*b(s(i),:)+c(s(i+2),:).*c(s(i),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))-(b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:))-(b(s(i+1),:).*b(s(i),:)+c(s(i+1),:).*c(s(i),:)).*(2*r(s(i),:)+2*r(s(i+1),:)+6*r(s(i+2),:))+(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(2*r(s(i),:)+r(s(i+1),:)+2*r(s(i+2),:)))./(240*abs(A(i,:)));    
     g_edge([4,7,8],:)=g_edge([2,3,6],:); %interaction integrals are symmetric in a triangle's edge indices
+    g_edge(:,1:ceil((N-1)*percDist)*(N-1)*2)=eps_d*g_edge(:,1:ceil((N-1)*percDist)*(N-1)*2); %different permittivities    
     G_edge=sparse(I_edge,J_edge,g_edge,length(E),length(E));
     
+    m_node=zeros(9,size(F,2));
+    m_node(1:9,:)=GQI+c(i_index,:)/6+c(j_index,:)/6+(c(i_index,:).*c(j_index,:)+b(i_index,:).*b(j_index,:))./(2*abs(A(i_index,:))).*(r(1,:)+r(2,:)+r(3,:))/6;
+    M_node=sparse(I,J,m_node,length(V),length(V));
+    
     g_node=zeros(9,size(F,2));
-    g_node([1,5,9],:)=(3*r(s(i),:)+r(s(i+1),:)+r(s(i+2),:))./(30*abs(A(i,:)));
-    g_node([2,6,3],:)=(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:))./(60*abs(A(i,:)));
+    g_node([1,5,9],:)=(3*r(s(i),:)+r(s(i+1),:)+r(s(i+2),:)).*abs(A(i,:))/30;
+    g_node([2,6,3],:)=(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:)).*abs(A(i,:))/60;
     g_node([4,7,8],:)=g_node([2,3,6],:); %interaction integrals are symmetric in a triangle's edge indices
+    g_node(:,1:ceil((N-1)*percDist)*(N-1)*2)=eps_d*g_node(:,1:ceil((N-1)*percDist)*(N-1)*2); %different permittivities
     G_node=sparse(I,J,g_node,length(V),length(V));
     
-    m_node=zeros(9,size(F,2));
-    %assumpties hier want we weten niet hoe die expansie gaat...
-    m_node(1:9,:)=c(i_index,:)/6+c(j_index,:)/6+(c(i_index,:).*c(j_index,:)+b(i_index,:).*b(j_index,:))./(2*abs(A(i_index,:))).*(r(1,:)+r(2,:)+r(3,:))/6;
-    M_node=sparse(I,J,m_node,length(V),length(V));
-        
-    %BCs    
+    %BCs   
+    sz1=size(G_edge,1); sz2=size(E_leftBound_edge,1);
+    G_edge(E_leftBound_edge,:)=zeros(sz2,sz1); G_edge(:,E_leftBound_edge)=zeros(sz1,sz2);
+    M_edge(E_leftBound_edge,:)=zeros(sz2,sz1); M_edge(:,E_leftBound_edge)=zeros(sz1,sz2);
+    for n=1:size(E_leftBound_edge,1)
+        M_edge(E_leftBound_edge(n),E_leftBound_edge(n))=1;
+    end
+    
+    sz1=size(G_edge,1); sz2=size(E_rightBound_edge,1);
+    G_edge(E_rightBound_edge,:)=zeros(sz2,sz1); G_edge(:,E_rightBound_edge)=zeros(sz1,sz2);
+    M_edge(E_rightBound_edge,:)=zeros(sz2,sz1); M_edge(:,E_rightBound_edge)=zeros(sz1,sz2);
+    for n=1:size(E_rightBound_edge,1)
+        M_edge(E_rightBound_edge(n),E_rightBound_edge(n))=1;
+    end
+    
     sz1=size(G_edge,1); sz2=size(E_mantle_edge,1);
-    G_edge(E_mantle_edge,:)=zeros(sz2,sz1);
-    G_edge(:,E_mantle_edge)=zeros(sz1,sz2);
-    M_edge(E_mantle_edge,:)=zeros(sz2,sz1);
-    M_edge(:,E_mantle_edge)=zeros(sz1,sz2);
+    G_edge(E_mantle_edge,:)=zeros(sz2,sz1); G_edge(:,E_mantle_edge)=zeros(sz1,sz2);
+    M_edge(E_mantle_edge,:)=zeros(sz2,sz1); M_edge(:,E_mantle_edge)=zeros(sz1,sz2);
     for n=1:size(E_mantle_edge,1)
         M_edge(E_mantle_edge(n),E_mantle_edge(n))=1;
-        %G_edge(E_mantle_edge(n),E_mantle_edge(n))=1;
     end
     
     sz1=size(G_edge,1); sz2=size(E_axis_edge,1);
-    G_edge(E_axis_edge,:)=zeros(sz2,sz1);
-    G_edge(:,E_axis_edge)=zeros(sz1,sz2);
-    M_edge(E_axis_edge,:)=zeros(sz2,sz1);
-    M_edge(:,E_axis_edge)=zeros(sz1,sz2);
+    G_edge(E_axis_edge,:)=zeros(sz2,sz1); G_edge(:,E_axis_edge)=zeros(sz1,sz2);
+    M_edge(E_axis_edge,:)=zeros(sz2,sz1); M_edge(:,E_axis_edge)=zeros(sz1,sz2);
     for n=1:size(E_axis_edge,1)
         M_edge(E_axis_edge(n),E_axis_edge(n))=1;
-        %G_edge(E_axis_edge(n),E_axis_edge(n))=1;
     end
 
     sz1=size(G_node,1); sz2=size(E_leftBound_node,1);
-    G_node(E_leftBound_node,:)=zeros(sz2,sz1);
-    G_node(:,E_leftBound_node)=zeros(sz1,sz2);
-    M_node(E_leftBound_node,:)=zeros(sz2,sz1);
-    M_node(:,E_leftBound_node)=zeros(sz1,sz2);
+    G_node(E_leftBound_node,:)=zeros(sz2,sz1); G_node(:,E_leftBound_node)=zeros(sz1,sz2);
+    M_node(E_leftBound_node,:)=zeros(sz2,sz1); M_node(:,E_leftBound_node)=zeros(sz1,sz2);
     for n=1:size(E_leftBound_node,1)
         M_node(E_leftBound_node(n),E_leftBound_node(n))=1;
     end
     
     sz1=size(G_node,1); sz2=size(E_rightBound_node,1);
-    G_node(E_rightBound_node,:)=zeros(sz2,sz1);
-    G_node(:,E_rightBound_node)=zeros(sz1,sz2);
-    M_node(E_rightBound_node,:)=zeros(sz2,sz1);
-    M_node(:,E_rightBound_node)=zeros(sz1,sz2);
+    G_node(E_rightBound_node,:)=zeros(sz2,sz1); G_node(:,E_rightBound_node)=zeros(sz1,sz2);
+    M_node(E_rightBound_node,:)=zeros(sz2,sz1); M_node(:,E_rightBound_node)=zeros(sz1,sz2);
     for n=1:size(E_rightBound_node,1)
         M_node(E_rightBound_node(n),E_rightBound_node(n))=1;
     end
     
     sz1=size(G_node,1); sz2=size(E_axis_node,1);
-    G_node(E_axis_node,:)=zeros(sz2,sz1);
-    G_node(:,E_axis_node)=zeros(sz1,sz2);
-    M_node(E_axis_node,:)=zeros(sz2,sz1);
-    M_node(:,E_axis_node)=zeros(sz1,sz2);
+    G_node(E_axis_node,:)=zeros(sz2,sz1); G_node(:,E_axis_node)=zeros(sz1,sz2);
+    M_node(E_axis_node,:)=zeros(sz2,sz1); M_node(:,E_axis_node)=zeros(sz1,sz2);
     for n=1:size(E_axis_node,1)
         M_node(E_axis_node(n),E_axis_node(n))=1;
     end
     
     sz1=size(G_node,1); sz2=size(E_mantle_node,1);
-    G_node(E_mantle_node,:)=zeros(sz2,sz1);
-    G_node(:,E_mantle_node)=zeros(sz1,sz2);
-    M_node(E_mantle_node,:)=zeros(sz2,sz1);
-    M_node(:,E_mantle_node)=zeros(sz1,sz2);
+    G_node(E_mantle_node,:)=zeros(sz2,sz1); G_node(:,E_mantle_node)=zeros(sz1,sz2);
+    M_node(E_mantle_node,:)=zeros(sz2,sz1); M_node(:,E_mantle_node)=zeros(sz1,sz2);
     for n=1:size(E_mantle_node,1)
         M_node(E_mantle_node(n),E_mantle_node(n))=1;
     end
 
     %length(E)-size(F,2)+1 %eig gwn #nodes volgens euler
-    %svd(full(M_edge)); %sum(svd(full(M_edge))<eps('single'))
-    %sum(svd(full(M_edge))<eps('single') | abs(svd(full(M_edge))-1)<eps('single'))
-    %[Eedge,D]=eig(full(M_edge),500*full(G_edge)); %blijkbaar zou dit een juister resultaat geven dan eigs
-    %myeigs=eig(full(M_edge),full(G_edge));
-    %sum(myeigs<1)
-    %plot([1:1:size(sort(myeigs))],sort(myeigs))
-    %global TM_modes; [TM_modes,D_TM]=eigs(M_edge,G_edge,5,27.5); 
-    %global TE_modes; [TE_modes,D_TE]=eigs(M_node,G_node,5,0.0019);
-    global TM_modes; [TM_modes,D_TM]=eig(full(M_edge),full(G_edge));
-    global TE_modes; [TE_modes,D_TE]=eig(full(M_node),full(G_node));
+    %svd(full(M_edge)) %sum(svd(full(M_edge))<eps('single') | abs(svd(full(M_edge))-1)<eps('single'))    
+    %sum(svd(full(M_edge))<=1+eps('single')) %apparantly only this works. there's one sigma randomly between 0 and 1 which isn't an sqrt(eigenvalue)
+    
+    if N < 7
+        global TM_modes; [TM_modes,D_TM]=eig(full(M_edge),full(G_edge));
+        global TE_modes; [TE_modes,D_TE]=eig(full(M_node),full(G_node));
+    else
+        global TM_modes; [TM_modes,D_TM]=eigs(M_edge,G_edge,40,74); %let op dat je niet boven max aantal modes geraakt nu!
+        global TE_modes; [TE_modes,D_TE]=eigs(M_node,G_node,40,138);
+    end
     
     %sort the eigenvalues and associated eigenmodes from low to high 
-    [dnnz_TM,sortingIndices]=sort(D_TM(D_TM>eps('single'))); TM_modes=TM_modes(:,sortingIndices);
-    [dnnz_TE,sortingIndices]=sort(D_TE(D_TE>eps('single'))); TE_modes=TE_modes(:,sortingIndices);
-    dnnz_TM
-    dnnz_TE
+    [Eigs_TM,sortingIndices]=sort(D_TM(D_TM>eps('single') & D_TM ~= Inf)); TM_modes=TM_modes(:,sortingIndices);
+    [Eigs_TE,sortingIndices]=sort(D_TE(D_TE>eps('single') & D_TE ~= Inf)); TE_modes=TE_modes(:,sortingIndices);
     
-    disp(['TM resonant frequency :' num2str(dnnz_TM(mode))])
-    disp(['TE resonant frequency :' num2str(dnnz_TE(mode))])
+    %disp(['TM resonant frequency: k^2=' num2str(Eigs_TM(mode))])
+    %disp(['TE resonant frequency: k^2=' num2str(Eigs_TE(mode))])
+    %TO DO: k is geen frequentie. Neem lucht als dielectric!
     
     %%{
     if meshType == 'cylinder'
         if (Nz+Nr)/2 < 61
             res=1/(N-1)/6; %roughly 6 per triangle length. Increasing res betters low N visualization but not eigenvalues
-            %res=0.02; %best to pick a round number since the edges and nodes are located on "round" places
+            mode=2;
             viewElectricField(mode, res, z_max, r_max)
-            %viewMeshandBasisFcts(1, 'total', res,z_max,r_max)
-            %viewMeshandBasisFcts(1, 3, res,z_max,r_max)
+            %viewMeshandBasisFcts(1, 1, res,z_max,r_max)
+            %viewMeshandBasisFcts(1, 2, res,z_max,r_max)
         else
             fprintf('are you sure you want to display so many triangles? (%d,%d) \n', Nz, Nr)
         end
@@ -359,7 +353,7 @@ function viewElectricField(mode,resolution,z_max,r_max)
         V=V.'; F=F.'; patch('Vertices',[V, zeros(size(V,1), 1)],'Faces',F,'FaceColor','none','EdgeColor','black','LineWidth',1.5); V=V.'; F=F.';     
     end
     surface(Z,R,Ez); view(30,90-30); 
-    quiver(Z,R,Ez,Er,'black'); 
+    %quiver(Z,R,Ez,Er,'black'); 
     alpha 0.75
     xlabel('$z$ [$m$]','interpreter','latex')
     ylabel('$r$ [$m$]','interpreter','latex')
