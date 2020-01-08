@@ -1,6 +1,11 @@
 function ErrorConvergence()
     max_modes=5;
-    exactTM=[5.7832,15.6528,30.4713,40.3409,45.2616]; exactTE=[24.5515,54.1603,59.0882,88.6971,103.5084];
+    %fully homogenuous
+    %exactTM=[5.7832,15.6528,30.4713,40.3409,45.2616]; exactTE=[24.5515,54.1603,59.0882,88.6971,103.5084];
+    
+    %half cylinder different permittivity
+    exactTM=[1.8077,2.9359,3.5500,5.0948,5.2435].^2; exactTE=[3.2996,4.8998,5.6206,6.5751,6.9783].^2;
+    
     TMeigs=zeros(max_modes,1); TEeigs=zeros(max_modes,1); hasConvergedTM=zeros(max_modes,2); hasConvergedTE=zeros(max_modes,2);
     N=0; TM_xaxis=[]; TE_xaxis=[];
     while ~(all(hasConvergedTM(:,1)) & all(hasConvergedTE(:,2)))
@@ -14,7 +19,7 @@ function ErrorConvergence()
             N=N+15; disp(['N = ' num2str(N)])
         else
             disp('Necessary N for convergence exceeds 100. Aborting procedure.')
-            return
+            break
         end        
         [TM,TE]=ComputeEigs(N); 
         if size(TM,1)>max_modes
@@ -69,7 +74,4 @@ function ErrorConvergence()
     xlabel('$N$','interpreter','latex')
     ylabel('$k^2$','interpreter','latex')    
     hold off
-    
-    hasConvergedTM
-    hasConvergedTE
 end
