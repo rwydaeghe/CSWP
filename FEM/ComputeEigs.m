@@ -174,7 +174,7 @@ function [Eigs_TM,Eigs_TE]=ComputeEigs(meshSize)
     for n=1:size(E_mantle_node,1)
         M_node(E_mantle_node(n),E_mantle_node(n))=1;
     end
-
+    
     %length(E)-size(F,2)+1 %eig gwn #nodes volgens euler
     %svd(full(M_edge)) %sum(svd(full(M_edge))<eps('single') | abs(svd(full(M_edge))-1)<eps('single'))    
     %sum(svd(full(M_edge))<=1+eps('single')) %apparantly only this works. there's one sigma randomly between 0 and 1 which isn't an sqrt(eigenvalue)
@@ -191,16 +191,20 @@ function [Eigs_TM,Eigs_TE]=ComputeEigs(meshSize)
     [Eigs_TM,sortingIndices]=sort(D_TM(D_TM>eps('single') & D_TM ~= Inf)); TM_modes=TM_modes(:,sortingIndices);
     [Eigs_TE,sortingIndices]=sort(D_TE(D_TE>eps('single') & D_TE ~= Inf)); TE_modes=TE_modes(:,sortingIndices);
     
+    %mode=1
+    %disp(['TM resonant frequency: k^2=' num2str(Eigs_TM(mode))])
+    %disp(['TE resonant frequency: k^2=' num2str(Eigs_TE(mode))])
+    %mode=2
     %disp(['TM resonant frequency: k^2=' num2str(Eigs_TM(mode))])
     %disp(['TE resonant frequency: k^2=' num2str(Eigs_TE(mode))])
     %TO DO: k is geen frequentie. Neem lucht als dielectric!
     
     %%{
     if meshType == 'cylinder'
-        if (Nz+Nr)/2 < 61
+        if (Nz+Nr)/2 < 73
             res=1/(N-1)/6; %roughly 6 per triangle length. Increasing res betters low N visualization but not eigenvalues
-            mode=2;
-            viewElectricField(mode, res, z_max, r_max)
+            %mode=1;
+            %viewElectricField(mode, res, z_max, r_max)
             %viewMeshandBasisFcts(1, 1, res,z_max,r_max)
             %viewMeshandBasisFcts(1, 2, res,z_max,r_max)
         else
