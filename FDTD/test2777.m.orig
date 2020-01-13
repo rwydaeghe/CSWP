@@ -1,0 +1,28 @@
+<<<<<<< HEAD
+global q
+q = ones(160,160)
+circlewithpolar(0.1,0.1,1,160);
+c = n/2+0.5;
+for j=1:160-1
+    for i=1:160
+        if q(j,i) ~= q(j+1,i)
+            q(j,i) = (c-j)*dy-dy/2;
+%             q(j,i) = (c-j)*dy
+        end
+    end
+end
+=======
+global q
+q = ones(160,160)
+circlewithpolar(0.1,0.1,1,160);
+c = n/2+0.5;
+for j=1:160-1
+    for i=1:160
+        if q(j,i) ~= q(j+1,i)
+            q(j,i) = (c-j)*dy-dy/2;
+%             q(j,i) = (c-j)*dy
+        end
+    end
+end
+>>>>>>> 478da5cd01de362455712c0f754025711d0bcffe
+% circlewithpolar(dx,dy,a,n);
