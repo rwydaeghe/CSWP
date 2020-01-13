@@ -176,7 +176,7 @@ function [Eigs_TM,Eigs_TE]=ComputeEigs(meshSize, scenario)
     nnz(G_node)
     nnz(G_edge)
     %} 
-    %5.3% maar 2x zoveel nnz???????????????????????
+    %5.3% maar 2x zoveel nnz??
     
     %BCs   
     sz1=size(G_edge,1); sz2=size(E_leftBound_edge,1);
@@ -243,7 +243,9 @@ function [Eigs_TM,Eigs_TE]=ComputeEigs(meshSize, scenario)
         global TM_modes; [TM_modes,D_TM]=eig(full(M_edge),full(G_edge));
         global TE_modes; [TE_modes,D_TE]=eig(full(M_node),full(G_node));
     else
-        global TM_modes; [TM_modes,D_TM]=eigs(M_edge,G_edge,40,70); %let op dat je niet boven max aantal modes geraakt nu!
+        %important: set sigma values near expected eigenvalues (e.g. inhomo
+        %lin will have very small eigenvalues). Also don't exceed max #mods
+        global TM_modes; [TM_modes,D_TM]=eigs(M_edge,G_edge,40,70); 
         global TE_modes; [TE_modes,D_TE]=eigs(M_node,G_node,40,120);
     end
     
@@ -251,7 +253,7 @@ function [Eigs_TM,Eigs_TE]=ComputeEigs(meshSize, scenario)
     [Eigs_TM,sortingIndices]=sort(D_TM(D_TM>eps('single') & D_TM ~= Inf)); TM_modes=TM_modes(:,sortingIndices);
     [Eigs_TE,sortingIndices]=sort(D_TE(D_TE>eps('single') & D_TE ~= Inf)); TE_modes=TE_modes(:,sortingIndices);
     
-    %only for memory comntion algorithm comment this out
+    %only for memory consumption algorithm (uncomment this in that case)
     %{
     am=whos('M_node'); Eigs_TE=am.bytes;
     bm=whos('G_node'); Eigs_TE=[Eigs_TE;bm.bytes];
@@ -259,12 +261,9 @@ function [Eigs_TM,Eigs_TE]=ComputeEigs(meshSize, scenario)
     dm=whos('G_edge'); Eigs_TM=[Eigs_TM;dm.bytes];
     %}
     
-    %mode=1
-    %disp(['TM resonant frequency: k^2=' num2str(Eigs_TM(mode))])
-    %disp(['TE resonant frequency: k^2=' num2str(Eigs_TE(mode))])
-    %mode=2
-    %disp(['TM resonant frequency: k^2=' num2str(Eigs_TM(mode))])
-    %disp(['TE resonant frequency: k^2=' num2str(Eigs_TE(mode))])
+    mode=1;
+    disp(['TM resonant frequency: k^2=' num2str(Eigs_TM(mode))])
+    disp(['TE resonant frequency: k^2=' num2str(Eigs_TE(mode))])
     %first 5 modes
     %Eigs_TM(1:5)
     %Eigs_TE(1:5)
@@ -273,8 +272,8 @@ function [Eigs_TM,Eigs_TE]=ComputeEigs(meshSize, scenario)
     if meshType == 'cylinder'
         if (Nz+Nr)/2 < 73
             res=1/(N-1)/6; %roughly 6 per triangle length. Increasing res betters low N visualization but not eigenvalues
-            %mode=1;
-            %viewElectricField(mode, res, z_max, r_max)
+            mode=1;
+            viewElectricField(mode, res, z_max, r_max)
             %viewMeshandBasisFcts(1, 1, res,z_max,r_max)
             %viewMeshandBasisFcts(1, 2, res,z_max,r_max)
         else
@@ -373,7 +372,7 @@ function out=findPattern(A,B) %find patternS A in data B and put them in array
     global F; lenF=size(F,2); global N; 
     %bedoeling: O(n) maken van out=bsxfun(@eq,A,B) 
     if N <=7
-        out=bsxfun(@eq,A,B); %algoritmes werken eigenlijk enkel voor grote N. Bovendien is dit minder overlay = sneller
+        out=bsxfun(@eq,A,B); %algoritmes werken eigenlijk enkel voor grote N. Bovendien is dit minder overhead = sneller
     else
         %create O(1) windows where pattern is probable to be found
         axis=[1:length(B)/lenF:length(B)];
