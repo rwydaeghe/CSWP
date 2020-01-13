@@ -1,33 +1,36 @@
-function ErrorConvergence(scenario)
-    max_modes=5;
+function MemoryConsumption(scenario)
+    max_modes=2;
     if scenario=="empty"
         exactTM=[5.7832,15.6528,30.4713,40.3409,45.2616]; exactTE=[24.5515,54.1603,59.0882,88.6971,103.5084];
     elseif scenario=="half-filled"
         exactTM=[1.8077,2.9359,3.5500,5.0948,5.2435].^2; exactTE=[3.2996,4.8998,5.6206,6.5751,6.9783].^2;
     elseif scenario=="partly-filled"
         exactTM=[-300,-300,-300,-300,-300].^2; exactTE=[-300,-300,-300,-300,-300].^2; %will never converge since can't be negative
-    elseif scenario=="partly-filled inhomo lin"
-        exactTM=[-300,-300,-300,-300,-300].^2; exactTE=[-300,-300,-300,-300,-300].^2; %will never converge since can't be negative    
-    elseif scenario=="partly-filled inhomo GRIN"
-        exactTM=[-300,-300,-300,-300,-300].^2; exactTE=[-300,-300,-300,-300,-300].^2; %will never converge since can't be negative    
     end
     
     TMeigs=zeros(max_modes,1); TEeigs=zeros(max_modes,1); hasConvergedTM=zeros(max_modes,2); hasConvergedTE=zeros(max_modes,2);
-    N=1; TM_xaxis=[]; TE_xaxis=[];
-    while ~(all(hasConvergedTM(:,1)) & all(hasConvergedTE(:,2)))
+    N=0; TM_xaxis=[]; TE_xaxis=[];
+    while 1
         if N<=30
+            if N>=13 %here the TM converged in empty
+                break
+            end
             N=N+1;
         elseif N>30 & N <= 50
             N=N+3; disp(['N = ' num2str(N)])
         elseif N>50 & N <= 70
             N=N+10; disp(['N = ' num2str(N)])
         elseif N>70 & N <= 100
+            if N>=72 %here the TE converged in empty
+                break
+            end
             N=N+15; disp(['N = ' num2str(N)])
         else
             disp('Necessary N for convergence exceeds 100. Aborting procedure.')
             break
         end        
-        [TM,TE]=ComputeEigs(N, scenario); 
+        
+        [TM,TE]=ComputeEigs(N, scenario);
         if size(TM,1)>max_modes
             TM=TM(1:max_modes);
         elseif size(TM,1)<max_modes
@@ -57,35 +60,38 @@ function ErrorConvergence(scenario)
             end
         end
     end
-    legendLabels={};   
-    for mode=1:max_modes
-        legendLabels{end+1}=['mode #' num2str(mode)];
-    end
     %convert to Number of Unknowns by #nodes/edges-#BCnodes/edges
     NoU_TE=@(N) N.^2-4*N+4;
     NoU_TM=@(N) N.*(N-1)+(2*N-1).*(N-1)-4*(N-1);
     
-    hasConvergedTE
-    hasConvergedTM
-    
     %plot
     figure('Name','TM resonant frequencies k^2')
     hold on  
-    plot(NoU_TM(TM_xaxis),sqrt(TMeigs(:,TM_xaxis)))
-    scatter(NoU_TM(hasConvergedTM(:,1)),sqrt(hasConvergedTM(:,2)),'filled')    
+    plot(NoU_TM(TM_xaxis),TMeigs(:,TM_xaxis))
+    %scatter(NoU_TM(hasConvergedTM(:,1)),hasConvergedTM(:,2),'filled')    
     %title('Error convergence of resonant frequencies as function of number of unknowns, \n for a cylinder completely filled with homogeneous (air) dielectric in the TM case','interpreter','latex')
-    legend(legendLabels,'FontSize',8,'Location','best')
+    legend({'M_{edge}','G_{edge}'},'FontSize',8,'Location','best')
     xlabel('Number of unknowns','interpreter','latex')
-    ylabel('$k=\omega/c$ [m$^{-1}$]','interpreter','latex')
+    ylabel('Memory consumed in bytes','interpreter','latex')
     hold off
     
     figure('Name','TE resonant frequencies k^2')    
     hold on
-    plot(NoU_TE(TE_xaxis),sqrt(TEeigs(:,TE_xaxis)))
-    scatter(NoU_TE(hasConvergedTE(:,1)),sqrt(hasConvergedTE(:,2)),'filled')        
+    plot(NoU_TE(TE_xaxis),TEeigs(:,TE_xaxis))
+    %scatter(NoU_TE(hasConvergedTE(:,1)),hasConvergedTE(:,2),'filled')        
     %title('Error convergence of resonant frequencies as function of number of unknowns, \n for a cylinder completely filled with homogeneous (air) dielectric in the TE case','interpreter','latex')
-    legend(legendLabels,'FontSize',8,'Location','best')
+    legend({'M_{node}','G_{node}'},'FontSize',8,'Location','best')
     xlabel('Number of unknowns','interpreter','latex')
-    ylabel('$k=\omega/c$ [m$^{-1}$]','interpreter','latex')    
+    ylabel('Memory consumed in bytes','interpreter','latex')    
+    hold off
+    
+    figure('Name','TE resonant frequencies k^2')    
+    hold on
+    plot(NoU_TE(TE_xaxis),[TEeigs(:,TE_xaxis);TMeigs(:,TE_xaxis)])
+    %scatter(NoU_TE(hasConvergedTE(:,1)),hasConvergedTE(:,2),'filled')        
+    %title('Error convergence of resonant frequencies as function of number of unknowns, \n for a cylinder completely filled with homogeneous (air) dielectric in the TE case','interpreter','latex')
+    legend({'M_{node}','G_{node}','M_{edge}','G_{edge}'},'FontSize',8,'Location','best')
+    xlabel('Number of unknowns','interpreter','latex')
+    ylabel('Memory consumed in bytes','interpreter','latex')    
     hold off
 end

@@ -1,12 +1,12 @@
-function [Eigs_TM,Eigs_TE]=ComputeEigs(meshSize)
+function [Eigs_TM,Eigs_TE]=ComputeEigs(meshSize, scenario)
     close all;
     %% Create and analyze mesh
     global N; N=meshSize; 
     %N=220; 
     
     %create V and F
+    z_max=1; r_max=1;
     meshType='cylinder';
-    z_max = 1; r_max = 1; d=0.5; percDist=d/z_max; eps_d=3;
     if meshType=='cylinder'
         Nz=N; Nr=Nz;
         global V; global F
@@ -74,6 +74,46 @@ function [Eigs_TM,Eigs_TE]=ComputeEigs(meshSize)
     w_edges_z_total=@(z,r,i,n) w_edges_z(z,r,1,n)+w_edges_z(z,r,2,n)+w_edges_z(z,r,3,n);
     w_edges_r_total=@(z,r,i,n) w_edges_r(z,r,1,n)+w_edges_r(z,r,2,n)+w_edges_r(z,r,3,n);    
     
+    %Set scenario
+    if scenario=="empty"
+        d=1; percDist=d/z_max; eps_d=1;
+    elseif scenario=="half-filled"
+        d=0.5; percDist=d/z_max; eps_d=3;
+    elseif scenario=="partly-filled" | scenario=="partly-filled inhomo lin" | scenario=="partly-filled inhomo GRIN"
+        if scenario=="partly-filled"
+            eps_rect=3; 
+            p1=[0.3,0.3]; p3=[0.7,0.7]; %defines part of cylinder
+            [Z,R] = meshgrid(p1(1):1/(N-1)/2:p3(1),p1(2):1/(N-1)/2:p3(2)); triList=trianglesImIn(Z,R);
+            simpleTriList=[];
+            for n=1:size(F,2)
+                if find(triList(:,:,n))~=0
+                    simpleTriList=[simpleTriList n];
+                end
+            end
+        elseif scenario=="partly-filled inhomo lin"
+            p1=[0,0]; p3=[1,1]; %defines part of cylinder (full!)
+            %increasing with z, only if selection is full cylinder
+            eps_rect=[]; eps_rect_min=1; eps_rect_max=6;
+            for zz=1:(N-1)
+                eps_z=eps_rect_min+zz/(N-1)*(eps_rect_max-eps_rect_min);
+                %eps_z=eps_rect_max-zz/(N-1)*(eps_rect_max-eps_rect_min);
+                eps_rect=[eps_rect eps_z*ones(1,2*(N-1))];
+            end
+            simpleTriList=1:size(F,2);
+        elseif scenario=="partly-filled inhomo GRIN"
+            p1=[0,0]; p3=[1,1]; %defines part of cylinder (full!)
+            %increasing with z, only if selection is full cylinder
+            eps_rect=[]; eps_max=20; eps_coeff=1-1/(eps_max); %becomes 1 @ r=1
+            for rr=1:(N-1)
+                eps_r=eps_max*(1-eps_coeff*(rr/(N-1))^2);
+                eps_rect=[eps_rect eps_r*ones(2*(N-1),1)];
+            end
+            eps_rect=reshape(eps_rect,1,[]);
+            simpleTriList=1:size(F,2);
+        end
+        
+    end
+    
     GQ_N=20;
     [W,X]=GaussLegendreQuadrature01(GQ_N);
     GQI=zeros(9,size(F,2));
@@ -104,7 +144,11 @@ function [Eigs_TM,Eigs_TE]=ComputeEigs(meshSize)
     g_edge([1,5,9],:)=((b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+6*r(s(i+1),:)+2*r(s(i+2),:))-2*(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))+(b(s(i+1),:).^2+c(s(i+1),:).^2).*(2*r(s(i),:)+2*r(s(i+1),:)+6*r(s(i+2),:)))./(240*abs(A(i,:)));
     g_edge([2,6,3],:)=((b(s(i+2),:).*b(s(i),:)+c(s(i+2),:).*c(s(i),:)).*(r(s(i),:)+2*r(s(i+1),:)+2*r(s(i+2),:))-(b(s(i+2),:).^2+c(s(i+2),:).^2).*(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:))-(b(s(i+1),:).*b(s(i),:)+c(s(i+1),:).*c(s(i),:)).*(2*r(s(i),:)+2*r(s(i+1),:)+6*r(s(i+2),:))+(b(s(i+1),:).*b(s(i+2),:)+c(s(i+1),:).*c(s(i+2),:)).*(2*r(s(i),:)+r(s(i+1),:)+2*r(s(i+2),:)))./(240*abs(A(i,:)));    
     g_edge([4,7,8],:)=g_edge([2,3,6],:); %interaction integrals are symmetric in a triangle's edge indices
-    g_edge(:,1:ceil((N-1)*percDist)*(N-1)*2)=eps_d*g_edge(:,1:ceil((N-1)*percDist)*(N-1)*2); %different permittivities    
+    if scenario=="half-filled"
+        g_edge(:,1:ceil((N-1)*percDist)*(N-1)*2)=eps_d*g_edge(:,1:ceil((N-1)*percDist)*(N-1)*2); %different permittivities    
+    elseif scenario=="partly-filled" | scenario=="partly-filled inhomo lin" | scenario=="partly-filled inhomo GRIN"
+        g_edge(:,simpleTriList)=eps_rect.*g_edge(:,simpleTriList); %different permittivities
+    end
     G_edge=sparse(I_edge,J_edge,g_edge,length(E),length(E));
     
     m_node=zeros(9,size(F,2));
@@ -115,8 +159,24 @@ function [Eigs_TM,Eigs_TE]=ComputeEigs(meshSize)
     g_node([1,5,9],:)=(3*r(s(i),:)+r(s(i+1),:)+r(s(i+2),:)).*abs(A(i,:))/30;
     g_node([2,6,3],:)=(2*r(s(i),:)+2*r(s(i+1),:)+r(s(i+2),:)).*abs(A(i,:))/60;
     g_node([4,7,8],:)=g_node([2,3,6],:); %interaction integrals are symmetric in a triangle's edge indices
-    g_node(:,1:ceil((N-1)*percDist)*(N-1)*2)=eps_d*g_node(:,1:ceil((N-1)*percDist)*(N-1)*2); %different permittivities
+    if scenario=="half-filled"
+        g_node(:,1:ceil((N-1)*percDist)*(N-1)*2)=eps_d*g_node(:,1:ceil((N-1)*percDist)*(N-1)*2); %different permittivities
+    elseif scenario=="partly-filled" | scenario=="partly-filled inhomo lin" | scenario=="partly-filled inhomo GRIN"
+        g_node(:,simpleTriList)=eps_rect.*g_node(:,simpleTriList); %different permittivities
+    end
     G_node=sparse(I,J,g_node,length(V),length(V));
+    
+    %{
+    whos g_node
+    whos g_edge
+    whos G_node
+    whos G_edge
+    full(G_node)
+    full(G_edge)
+    nnz(G_node)
+    nnz(G_edge)
+    %} 
+    %5.3% maar 2x zoveel nnz???????????????????????
     
     %BCs   
     sz1=size(G_edge,1); sz2=size(E_leftBound_edge,1);
@@ -183,13 +243,21 @@ function [Eigs_TM,Eigs_TE]=ComputeEigs(meshSize)
         global TM_modes; [TM_modes,D_TM]=eig(full(M_edge),full(G_edge));
         global TE_modes; [TE_modes,D_TE]=eig(full(M_node),full(G_node));
     else
-        global TM_modes; [TM_modes,D_TM]=eigs(M_edge,G_edge,40,74); %let op dat je niet boven max aantal modes geraakt nu!
-        global TE_modes; [TE_modes,D_TE]=eigs(M_node,G_node,40,138);
+        global TM_modes; [TM_modes,D_TM]=eigs(M_edge,G_edge,40,70); %let op dat je niet boven max aantal modes geraakt nu!
+        global TE_modes; [TE_modes,D_TE]=eigs(M_node,G_node,40,120);
     end
     
     %sort the eigenvalues and associated eigenmodes from low to high 
     [Eigs_TM,sortingIndices]=sort(D_TM(D_TM>eps('single') & D_TM ~= Inf)); TM_modes=TM_modes(:,sortingIndices);
     [Eigs_TE,sortingIndices]=sort(D_TE(D_TE>eps('single') & D_TE ~= Inf)); TE_modes=TE_modes(:,sortingIndices);
+    
+    %only for memory comntion algorithm comment this out
+    %{
+    am=whos('M_node'); Eigs_TE=am.bytes;
+    bm=whos('G_node'); Eigs_TE=[Eigs_TE;bm.bytes];
+    cm=whos('M_edge'); Eigs_TM=cm.bytes;
+    dm=whos('G_edge'); Eigs_TM=[Eigs_TM;dm.bytes];
+    %}
     
     %mode=1
     %disp(['TM resonant frequency: k^2=' num2str(Eigs_TM(mode))])
@@ -197,7 +265,9 @@ function [Eigs_TM,Eigs_TE]=ComputeEigs(meshSize)
     %mode=2
     %disp(['TM resonant frequency: k^2=' num2str(Eigs_TM(mode))])
     %disp(['TE resonant frequency: k^2=' num2str(Eigs_TE(mode))])
-    %TO DO: k is geen frequentie. Neem lucht als dielectric!
+    %first 5 modes
+    %Eigs_TM(1:5)
+    %Eigs_TE(1:5)
     
     %%{
     if meshType == 'cylinder'
@@ -361,6 +431,7 @@ function viewElectricField(mode,resolution,z_max,r_max)
     alpha 0.75
     xlabel('$z$ [$m$]','interpreter','latex')
     ylabel('$r$ [$m$]','interpreter','latex')
+    zlabel('$cst \cdot E_z$ [$V/m$]','interpreter','latex')
     hold off
 
     figure('Name',['Er in TM mode ' num2str(mode) ' (N = ' num2str(N) ')'])
