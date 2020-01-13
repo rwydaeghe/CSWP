@@ -8,16 +8,17 @@ a=1; %radius of circle
 
 dx=0.1; %spatial discretisation step
 dy=dx;
-nx=round(8*a/dx); %nx numbers of cells in x direction for total field, chosen to be even and large enough to make comparison to analytic solution
+nx=round(15*a/dx); %nx numbers of cells in x direction for total field, chosen to be even and large enough to make comparison to analytic solution
 if mod(nx,2)==1
     nx = nx+1;
 end
+
 ny=nx; %ny chosen equal to nx
 npml=30; %number of cells pml
-km=1000; %max k for pml
+km=10000; %max k for pml
 nsf=20; %number of cells sf region
 n=nx+2*nsf+2*npml; %total number of cells in x or y direction
-CFL=0.3; %Courant number
+CFL=0.1; %Courant number
 dt=CFL/(c*sqrt((1/dx^2)+(1/dy^2))); %time step
 nt=600/CFL; %number of time steps
 
@@ -32,16 +33,12 @@ ox = zeros(n, n+1); oy = zeros(n+1, n); px = zeros(n, n); py = zeros(n, n);
 global oxref pxref
 oxref = zeros(1,nx+1); pxref = zeros(1,nx);
 
-%% Set circle
+%% Set circles
 
-
-global q qx qy %matrices which after elementwise multiplication with the px py ox and oy matrix induce the boundary condition for the fields, using the staircase method to get the circle geometry
-q = ones(2*round(a/dx)+10,2*round(a/dx)+10);
-qx = ones(2*round(a/dx)+10,2*round(a/dx)+10+1);
-qy = ones(2*round(a/dx)+10+1,2*round(a/dx)+10);
-circle(dx,dy,a,2*round(a/dx)+10);
-
-nn = round(a/dx)+5;
+global mx16 my16 area lxl lxr lyu lyd locx locy
+positions16(a,dx,dy,n);
+areas16(a,dx,dy,n);
+lengths16(a,dx,dy,n);
 
 %% Set k values for the whole region (to have pml)
 
@@ -77,16 +74,16 @@ koy = kox';
 x_bron=round(n/2); y_bron=round(n/2);
 
 x_recorder=x_bron; y_recorder=y_bron+round(2*a/dx); %plaats recorder 1 - location receiver 1
-x_ref=x_bron;y_ref=y_bron+round(1.7*a/dx); %plaats referentie 1 - location reference receiver 1
+x_ref=x_bron;y_ref=y_bron+round(2.5*a/dx); %plaats referentie 1 - location reference receiver 1
 
 x_recorder2=x_bron; y_recorder2=y_bron-round(2*a/dx); %plaats recorder 2 - location receiver 2
-x_ref2=x_bron;y_ref2=y_bron-round(1.7*a/dx); %plaats referentie 2 - location reference receiver 2
+x_ref2=x_bron;y_ref2=y_bron-round(2.5*a/dx); %plaats referentie 2 - location reference receiver 2
 
 x_recorder3=x_bron-round(2*a/dx); y_recorder3=y_bron; %plaats recorder 3 - location receiver 3
-x_ref3=x_bron-round(1.7*a/dx);y_ref3=y_bron; %plaats referentie 3 - location reference receiver 3
+x_ref3=x_bron-round(2.5*a/dx);y_ref3=y_bron; %plaats referentie 3 - location reference receiver 3
 
 x_recorder4=x_bron+round(2*a/dx); y_recorder4=y_bron; %plaats recorder 3 - location receiver 3
-x_ref4=x_bron+round(1.7*a/dx);y_ref4=y_bron; %plaats referentie 3 - location reference receiver 3
+x_ref4=x_bron+round(2.5*a/dx);y_ref4=y_bron; %plaats referentie 3 - location reference receiver 3
 
 
 recorder = zeros(nt,1);
@@ -124,42 +121,69 @@ for it = 1:nt
     %    mov(it) = getframe;
 
     %% Update total p fields
-
+    
     px = ((1-kpx*dt/2).*px - c^2*dt/dx*(ox(:,2:n+1)-ox(:,1:n)))./(1+kpx*dt/2);
     py = ((1-kpy*dt/2).*py - c^2*dt/dy*(oy(1:n,:)-oy(2:n+1,:)))./(1+kpy*dt/2);
-    
+%     
     %% Update tf/sf boundary for px (no py component incident field) (px lies in scattered field region)
 
     px(npml+nsf+1:n-npml-nsf+1,npml+nsf) = px(npml+nsf+1:n-npml-nsf+1,npml+nsf) - c^2*dt/dx*(-oxref(1,1)); %substract (-) oxref from total field on the right (+)
     px(npml+nsf+1:n-npml-nsf+1,n-npml-nsf+1) = px(npml+nsf+1:n-npml-nsf+1,n-npml-nsf+1) - c^2*dt/dx*(oxref(1,nx+1)); %substract (-) oxref from total field on the left(-)
-
     
+    %% Update cells intersecting circle
+    lengthm = size(mx16,2);
+    tol = 0.00000000001;
+    for v=1:lengthm
+        i = mx16(1,v);
+        j = my16(1,v);
+         if area(1,v) < tol
+            px(j,i) = 0;
+            py(j,i) = 0;
+         else
+            px(j,i) = px(j,i)+c^2*dt/dx*(ox(j,i+1)-ox(j,i))-c^2*dt/area(1,v)*(lxr(1,v)*ox(j,i+1)-lxl(1,v)*ox(j,i));
+            py(j,i) = py(j,i)+c^2*dt/dy*(oy(j,i)-oy(j+1,i))-c^2*dt/area(1,v)*(lyu(1,v)*oy(j,i)-lyd(1,v)*oy(j+1,i));
+         end
+    end
     %% Update total o fields
-    
     ox(1:n,2:n) = ((1-kox(1:n,2:n)*dt/2).*ox(1:n,2:n) - dt/dx*(px(1:n,2:n)+py(1:n,2:n)-px(1:n,1:n-1)-py(1:n,1:n-1)))./(1+kox(1:n,2:n)*dt/2);
     ox(1:n,1) = 1/(1+Z*dt/dx)*((1-Z*dt/dx)*ox(1:n,1)-2*dt/dx*(px(1:n,1)+py(1:n,1)));
     ox(1:n,n+1) = 1/(1+Z*dt/dx)*((1-Z*dt/dx)*ox(1:n,n+1)+2*dt/dx*(px(1:n,n)+py(1:n,n)));
     
-     oy(2:n,1:n) = ((1-koy(2:n,1:n)*dt/2).*oy(2:n,1:n) - dt/dy*(px(1:n-1,1:n)+py(1:n-1,1:n)-px(2:n,1:n)-py(2:n,1:n)))./(1+koy(2:n,1:n)*dt/2);
+    oy(2:n,1:n) = ((1-koy(2:n,1:n)*dt/2).*oy(2:n,1:n) - dt/dy*(px(1:n-1,1:n)+py(1:n-1,1:n)-px(2:n,1:n)-py(2:n,1:n)))./(1+koy(2:n,1:n)*dt/2);
       oy(1,1:n) = 1/(1+Z*dt/dy)*((1-Z*dt/dy)*oy(1,1:n)+2*dt/dy*(px(1,1:n)+py(1,1:n)));
       oy(n+1,1:n) = 1/(1+Z*dt/dy)*((1-Z*dt/dy)*oy(n+1,1:n)-2*dt/dy*(px(n,1:n)+py(n,1:n)));
-     
-    
+%      
+    %% Adjust total o fields
+    tol = 0.00000000001;
+    for v=1:lengthm
+        i = mx16(1,v);
+        j = my16(1,v);
+        if area(1,v) < tol
+            ox(j,i) = 0;
+            ox(j,i+1) = 0;
+            oy(j,i) = 0;
+            oy(j+1,i) = 0;
+        end
+        if abs(lxl(1,v)) < tol
+            ox(j,i) = 0;
+        end
+        if abs(lxr(1,v)) < tol
+            ox(j,i+1) = 0;
+        end
+        if abs(lyu(1,v)) < tol
+            oy(j,i) = 0;
+        end
+        if abs(lyd(1,v)) < tol
+            oy(j+1,i) = 0;
+        end
+    end
     %% Update tf/sf boundary for ox and oy (both in total field)
     
     ox(npml+nsf+1:n-npml-nsf,npml+nsf+1) = ox(npml+nsf+1:n-npml-nsf,npml+nsf+1) - dt/dx*(-pxref(1,1)); %add (+) incident field to the left (-)
     ox(npml+nsf+1:n-npml-nsf,n-npml-nsf+1) = ox(npml+nsf+1:n-npml-nsf,n-npml-nsf+1) - dt/dx*(+pxref(1,nx)); %add (+) incident field to the right (+)
     
-    oy(npml+nsf+1,npml+nsf+1:n-npml-nsf) = oy(npml+nsf+1,npml+nsf+1:n-npml-nsf) - dt/dy*(+pxref(1,:)); %add (+) incident field above (-)
-    oy(n-npml-nsf+1,npml+nsf+1:n-npml-nsf) = oy(n-npml-nsf+1,npml+nsf+1:n-npml-nsf) - dt/dy*(-pxref(1,:)); %add (+) incident field below (+)
-    
-    %% Ensure boundary cylinder
-    
-     
-     ox(npml+nsf+nx/2-nn+1:npml+nsf+nx/2+nn,npml+nsf+nx/2-nn+1:npml+nsf+nx/2+nn+1) = ox(npml+nsf+nx/2-nn+1:npml+nsf+nx/2+nn,npml+nsf+nx/2-nn+1:npml+nsf+nx/2+nn+1).*qx;
-     oy(npml+nsf+nx/2-nn+1:npml+nsf+nx/2+nn+1,npml+nsf+nx/2-nn+1:npml+nsf+nx/2+nn) = oy(npml+nsf+nx/2-nn+1:npml+nsf+nx/2+nn+1,npml+nsf+nx/2-nn+1:npml+nsf+nx/2+nn).*qy;
-     px(npml+nsf+nx/2-nn+1:npml+nsf+nx/2+nn,npml+nsf+nx/2-nn+1:npml+nsf+nx/2+nn) = px(npml+nsf+nx/2-nn+1:npml+nsf+nx/2+nn,npml+nsf+nx/2-nn+1:npml+nsf+nx/2+nn).*q;
-     py(npml+nsf+nx/2-nn+1:npml+nsf+nx/2+nn,npml+nsf+nx/2-nn+1:npml+nsf+nx/2+nn) = py(npml+nsf+nx/2-nn+1:npml+nsf+nx/2+nn,npml+nsf+nx/2-nn+1:npml+nsf+nx/2+nn).*q;
+    oy(npml+nsf+1,npml+nsf+1:n-npml-nsf) = oy(npml+nsf+1,npml+nsf+1:n-npml-nsf) - dt/dy*(+pxref(1,:)); %add (+) incident field above (+)
+    oy(n-npml-nsf+1,npml+nsf+1:n-npml-nsf) = oy(n-npml-nsf+1,npml+nsf+1:n-npml-nsf) - dt/dy*(-pxref(1,:)); %add (+) incident field below (-)
     
      %% Set control points
     recorder(it) = px(x_recorder,y_recorder)+py(x_recorder,y_recorder); %druk opnemen op recorders en referentieplaatsen - store p field at receiver locations
@@ -175,28 +199,19 @@ for it = 1:nt
     recorder4_ref(it) = px(x_ref4,y_ref4)+py(x_ref4,y_ref4);
     %% Presenting the p field
     
-%     pcolor(px+py);view(0,90);axis equal;shading interp;caxis([-340*A 340*A]);title([num2str(it) '/' num2str(nt)]);hold on;
-%     xlim([1 n+1]);ylim([1 n+1]);
-%     %mov(it) = getframe; %if this line is removed simulation runs much faster
+%        pcolor(px+py);view(0,90);axis equal;shading interp;caxis([-340*A 340*A]);title([num2str(it) '/' num2str(nt)]);hold on;
+%        xlim([1 n+1]);ylim([1 n+1]);
+%        mov(it) = getframe; %if this line is removed simulation runs much faster
 %     
-    
+%     
 end
 
-     pcolor(px+py);view(0,90);axis equal;shading interp;caxis([-340*A 340*A]);title([num2str(it) '/' num2str(nt)]);hold on;
-     xlim([1 n+1]);ylim([1 n+1]);
-
- n_of_samples=8192;
-% 
-post_Afout_Pfout(n,a,dx,dy,c,dt,x_ref,x_recorder,y_ref,y_recorder,x_bron,y_bron,recorder,recorder_ref,n_of_samples,tijdreeks,k)
-post_Afout_Pfout(n,a,dx,dy,c,dt,x_ref2,x_recorder2,y_ref2,y_recorder2,x_bron,y_bron,recorder2,recorder2_ref,n_of_samples,tijdreeks,k)
-post_Afout_Pfout(n,a,dx,dy,c,dt,x_ref3,x_recorder3,y_ref3,y_recorder3,x_bron,y_bron,recorder3,recorder3_ref,n_of_samples,tijdreeks,k)
-post_Afout_Pfout(n,a,dx,dy,c,dt,x_ref4,x_recorder4,y_ref4,y_recorder4,x_bron,y_bron,recorder4,recorder4_ref,n_of_samples,tijdreeks,k)
-
+pcolor(px+py);view(0,90);axis equal;shading interp;caxis([-340*A 340*A]);title([num2str(it) '/' num2str(nt)]);hold on;
+xlim([1 n+1]);ylim([1 n+1]);
+n_of_samples=8192;
 % % 
-% 
-% 
-% 
-% 
-
-
+% post_Afout_Pfout(a,dx,dy,c,dt,x_ref,x_recorder,y_ref,y_recorder,x_bron,y_bron,recorder,recorder_ref,n_of_samples,tijdreeks,k)
+% post_Afout_Pfout(a,dx,dy,c,dt,x_ref2,x_recorder2,y_ref2,y_recorder2,x_bron,y_bron,recorder2,recorder2_ref,n_of_samples,tijdreeks,k)
+% post_Afout_Pfout(a,dx,dy,c,dt,x_ref3,x_recorder3,y_ref3,y_recorder3,x_bron,y_bron,recorder3,recorder3_ref,n_of_samples,tijdreeks,k)
+% post_Afout_Pfout(a,dx,dy,c,dt,x_ref4,x_recorder4,y_ref4,y_recorder4,x_bron,y_bron,recorder4,recorder4_ref,n_of_samples,tijdreeks,k)
 
